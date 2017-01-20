@@ -1,0 +1,31 @@
+# Settings
+
+# use graphviz file to create nodes
+# 0 - manager and node_starter loads standard node file node_list.txt
+# 1 - manager and node_starter loads graphviz file graphviz.txt
+GRAPHVIZ 1
+
+# path to graphviz file
+GRAPHVIZ_FILE ../../conf/graphviz.txt
+
+# path to standard node file
+NODE_FILE ../../conf/node_list.txt
+
+# number of neighbors per node (if GRAPHVIZ is 0)
+MAX_NEIGHBORS 3
+
+# number of nodes
+NODES 100
+
+# number of edges
+EDGES 180
+
+# number of nodes until the node trust them whisper
+TRUST 4
+
+# ZMQ options
+# timeout for send (-1 : infinity) in milliseconds
+LINGER_TIME 5000
+
+# timeout for receive (-1 : infinity) in milliseconds
+RCVTIMEO_TIME 3000
