@@ -55,7 +55,7 @@ def __startNodes():
     '''
     __LOGGER.info(__IDENT + " start nodes ...")
     for i in range(0, len(__NODES)):
-        process_list.append(mp.Process(target=Node, args=(__NODES, str(i))))
+        process_list.append(mp.Process(target=Node, args=(str(i), )))
         process_list[i].start()
       
 @deprecated

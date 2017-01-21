@@ -14,8 +14,7 @@ from .node_receiver import Receiver
 from .node_submitter import Submitter
 from logger.logger import NodeLogger
 from util.settings import Settings
-from node import node_message
-from threading import Lock
+from node.node_message import Message, MsgType
 
 
 
@@ -25,7 +24,7 @@ class Node():
     """
     
              
-    def __init__(self, node_list, node_id):
+    def __init__(self, node_id):
         """
         Init Node
         
@@ -35,21 +34,19 @@ class Node():
         @type id: string
         @param id: my node id
         """
+        
         self.__LOGGER = NodeLogger().getLoggerInstance(NodeLogger.NODE) 
+        self.__ident = ("Node-ID-" + str(node_id) + " [PID:" + str(os.getpid()) + "] -> ")
         self.__pref = Settings()
         self.__pref.loadSettings()
         self.__whisper_count = 0
-        self.__whisperer = []
-        self.threadLock = Lock()                
-        self.__config = node_list#json.loads(open(fileName).read());
+        self.__whisperer = []                
+        self.__config = self.__pref.getNodeInfos()
+        self.__vector_time = self.__initVectorTime()
+        self.__LOGGER.debug(self.__ident + " Vektor time: " + str(list(self.__vector_time)))
         
-        # eingegebene ID vorhanden?
-        if not self.__checkID(node_id):
-            pass # TODO: raise NodeException("ID " + str(node_id) + " ist nicht vorhanden! Verfuegbare IDs: " + str(self.__config.keys()));
-        
-        self.__ident = ("Node-ID-" + str(node_id) + " [PID:" + str(os.getpid()) + "] -> ")
-                
-        # uebernehme Node-Daten
+                   
+        # apply node data
         self.__LOGGER.debug(self.__ident + "save id: " + node_id);           
         self.__id = node_id;
         
@@ -74,8 +71,7 @@ class Node():
             
         self.__LOGGER.debug(self.__ident + "selected neighbors: " + str(self.__neighbours));  
         
-        self.__receiver = Receiver(self.__ident, self)
-        #self.__submitter = Submitter() 
+        self.__receiver = Receiver(self) 
         self.__start()              
                         
                
@@ -87,7 +83,7 @@ class Node():
         self.__LOGGER.debug(self.__ident + "starterd ...")     
         receiver_t.start() 
         # send own ID on all neighbours
-        self.notifyNeighbours("Meine id " + self.__id)
+        self.notifyNeighbours("my id is " + self.__id)
                
         receiver_t.join()
     
@@ -98,8 +94,12 @@ class Node():
         """
         pass
     
+    # public methods
     def getID(self):
         return self.__id;
+    
+    def getIdent(self):
+        return self.__ident
     
     def getPort(self):
         return self.__port;
@@ -107,15 +107,131 @@ class Node():
     def getIP(self):
         return self.__ip; 
     
+    def getNeighbors(self):
+        return self.__neighbours  
+    
+    def getNodeInfos(self):
+        return self.__config
+    
+    def getVectorTime(self):
+        return self.__vector_time
+    
     def incWhisperCount(self):
+        '''
+        Counts rumors
+        '''
         self.__whisper_count += 1
     
     def appendWhisperer(self, whisperer):
+        '''
+        Append node id to the rumor list from the node, who told the rumor
+        '''
         self.__whisperer.append(whisperer)
+             
+    def incLocalTime(self):
+        '''
+        Increments in time-vector his own time
+        '''
+        self.__vector_time[int(self.__id)] += 1
+    
+    def setVectorTimeByReceive(self, new_time):
+        # set local time
+        self.incLocalTime()
+        # change time another nodes, except own local time
+        for i in range(int(self.__pref.getNumberOfNodes())):
+            if i != int(self.__id):
+                self.__vector_time[i] = max(self.__vector_time[i], new_time[i])
+        return self.__vector_time
+    
+    def notifyNeighbours(self, message):
+        '''
+        Send on all neighbors his own node id
         
-    def resetWhisper(self):
-        self.__whisper_count = 0
-        self.__whisperer.clear()
+        @param message: full message (with header and data)
+        @type message: compare node_message
+        '''
+        self.__LOGGER.debug(self.__ident + "my neighbours: " + str(self.__neighbours))
+        msg_buf = Message()        
+        for i in self.__neighbours:
+            msg_buf.init(self, self.__vector_time, str(self.__config[str(i)]["id"]), str(self.__config[str(i)]["ip"]), 
+                         str(self.__config[str(i)]["port"]), MsgType.MESSAGE, message)
+            Submitter().send_message(self, msg_buf)
+            
+    
+    def delNeighbours(self, node_id):
+        try:
+            self.__LOGGER.debug(self.__ident + "del node[" + node_id + "] ...")
+            index = self.__neighbours.index(int(node_id), )
+            self.__neighbours.pop(index)
+            self.__LOGGER.debug(self.__ident + "remaining neighbours: " + self.__neighbours)
+        except TypeError:
+            self.__LOGGER.info(self.__ident + "node[" + node_id + "]: not exist ...")
+        except ValueError:
+            self.__LOGGER.debug(self.__ident + "node[" + node_id + "]: is not my neighbours ...")
+    
+    def getWhisperState(self, msg):
+        '''
+        Response a rumor state on requester.
+        cm_true: if the node trust rumor
+        cm_false: if the node not trust rumor
+        
+        @param msg: full message (with header and data)
+        @type msg: compare node_message
+        '''
+        
+        self.__LOGGER.info(self.__ident + " my whisperer: " + str(self.__whisperer))
+        msg_buf = Message()
+        # trust them rumor ?
+        if self.__whisper_count >= int(self.__pref.getTrust()):
+            self.__LOGGER.debug(self.__ident + " im trust rumor: rumor_count " + str(self.__whisper_count) + " trust value " + self.__pref.getTrust())
+            
+            msg_buf.init(self, self.__vector_time, msg.getSubmId(), msg.getSubmIp(), msg.getSubmPort(), MsgType.RUMOR_STATE, MsgType.TRUE)
+            
+            '''
+            Submitter().send_message(node_message.TRUE, self.__id, self.__ip, self.__port,
+                    msg[node_message.HEADER][node_message.SUBM_ID],
+                    msg[node_message.HEADER][node_message.SUBM_IP],
+                    msg[node_message.HEADER][node_message.SUBM_PORT])
+            '''
+        else:
+            self.__LOGGER.debug(self.__ident + " im not trust whisper: whisper_count " + str(self.__whisper_count) + " trust value " + self.__pref.getTrust())
+            msg_buf.init(self, self.__vector_time, msg.getSubmId(), msg.getSubmIp(), msg.getSubmPort(), MsgType.RUMOR_STATE, MsgType.FALSE)
+            '''
+            Submitter().send_message(node_message.FALSE, self.__id, self.__ip, self.__port,
+                    msg[node_message.HEADER][node_message.SUBM_ID],
+                    msg[node_message.HEADER][node_message.SUBM_IP],
+                    msg[node_message.HEADER][node_message.SUBM_PORT])
+            '''
+        Submitter().send_message(self, msg_buf)       
+    
+    def tellWhisperToNeighbors(self, message):
+        '''
+        Send on his neighbors a rumor.
+        '''
+        
+        self.__whisperer.append(message.getSubmId()) 
+        self.__LOGGER.debug(self.__ident + " my neighbours " + str(self.__neighbours))
+        for n in self.__neighbours: 
+            if str(n) != message.getSubmId() and (str(n) not in self.__whisperer):
+                self.__LOGGER.debug(self.__ident + "tell whisper on [" + n + "]")
+                msg_buf = Message()
+                msg_buf.init(self, self.__vector_time, n, self.__config[n]["ip"], self.__config[n]["port"], MsgType.RUMOR, message.getMsg())
+                Submitter().send_message(self, msg_buf)
+                '''
+                Submitter().send_message(node_message.WHISPER, 
+                            message[node_message.HEADER][node_message.RECV_ID],
+                            message[node_message.HEADER][node_message.RECV_IP],
+                            message[node_message.HEADER][node_message.RECV_PORT],
+                            n, self.__config[n]["ip"], self.__config[n]["port"])
+                '''
+    
+    # private methods
+       
+    def __initVectorTime(self):
+        vector = []
+        for i in range(0, int(self.__pref.getNumberOfNodes())):
+            vector.append(i - i) # init with zero
+        return vector
     
     def __checkID(self, node_id): 
         """
@@ -150,83 +266,5 @@ class Node():
                 counter += 1;
                 
         return neighbourList;
-    
-    def notifyNeighbours(self, message):
-        '''
-        Send all neighbors his node id
-        
-        @param message: full message (with header and data)
-        @type message: compare node_message
-        '''
-        self.__LOGGER.debug(self.__ident + "my neighbours: " + str(self.__neighbours))
-        for i in self.__neighbours:
-            Submitter().send_message(message, self.__id, self.__ip, self.__port, 
-                str(self.__config[str(i)]["id"]), str(self.__config[str(i)]["ip"]), 
-                str(self.__config[str(i)]["port"]))
-    
-    def delNeighbours(self, node_id):
-        try:
-            self.__LOGGER.debug(self.__ident + "del node[" + node_id + "] ...")
-            index = self.__neighbours.index(int(node_id), )
-            self.__neighbours.pop(index)
-            self.__LOGGER.debug(self.__ident + "remaining neighbours: " + self.__neighbours)
-        except TypeError:
-            self.__LOGGER.info(self.__ident + "node[" + node_id + "]: not exist ...")
-        except ValueError:
-            self.__LOGGER.debug(self.__ident + "node[" + node_id + "]: is not my neighbours ...")
-    
-    def getWhisperState(self, msg):
-        '''
-        Response a whisper state on requester.
-        cm_true: if the node trust whisper
-        cm_false: if the node not trust whisper
-        
-        @param msg: full message (with header and data)
-        @type msg: compare node_message
-        '''
-        
-        self.__LOGGER.info(self.__ident + " my whisperer: " + str(self.__whisperer))
-        # trust them rumor ?
-        if self.__whisper_count >= int(self.__pref.getTrust()):
-            self.__LOGGER.debug(self.__ident + " im trust whisper: whisper_count " + str(self.__whisper_count) + " trust value " + self.__pref.getTrust())
-            Submitter().send_message(node_message.TRUE, self.__id, self.__ip, self.__port,
-                    msg[node_message.HEADER][node_message.SUBM_ID],
-                    msg[node_message.HEADER][node_message.SUBM_IP],
-                    msg[node_message.HEADER][node_message.SUBM_PORT])
-        else:
-            self.__ident + " im not trust whisper: whisper_count " + str(self.__whisper_count) + " trust value " + self.__pref.getTrust()
-            Submitter().send_message(node_message.FALSE, self.__id, self.__ip, self.__port,
-                    msg[node_message.HEADER][node_message.SUBM_ID],
-                    msg[node_message.HEADER][node_message.SUBM_IP],
-                    msg[node_message.HEADER][node_message.SUBM_PORT])
-               
-    
-    def tellWhisperToNeighbors(self, message):
-        '''
-        Send on his neighbors a rumor.
-        '''
-        
-        self.__whisperer.append(message[node_message.HEADER][node_message.SUBM_ID]) 
-        self.__LOGGER.debug(self.__ident + " my neighbours " + str(self.__neighbours))
-        for n in self.__neighbours: 
-            if str(n) != str(message[node_message.HEADER][node_message.SUBM_ID]) and (str(n) not in self.__whisperer):
-                self.__LOGGER.debug(self.__ident + "tell whisper on [" + n + "]")
-                Submitter().send_message(node_message.WHISPER, 
-                            message[node_message.HEADER][node_message.RECV_ID],
-                            message[node_message.HEADER][node_message.RECV_IP],
-                            message[node_message.HEADER][node_message.RECV_PORT],
-                            n, self.__config[n]["ip"], self.__config[n]["port"])
-        
-    
-    
-    def getNeighbors(self):
-        return self.__neighbours  
-    
-    def getNodeInfos(self):
-        return self.__config
-            
-        
-
-          
     
     

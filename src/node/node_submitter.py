@@ -8,7 +8,6 @@ Created on 05.12.2016
 import zmq
 from zmq.backend.cython.constants import LINGER, PUSH
 from logger.logger import NodeLogger
-from node import node_message
 from util.settings import Settings
 
 
@@ -27,7 +26,7 @@ class Submitter(object):
         self.__settings.loadSettings()        
         
     
-    def send_message(self, message, subm_id, subm_ip, subm_port, recv_id, recv_ip, recv_port): 
+    def send_message(self, Node, message):#, subm_id, subm_ip, subm_port, recv_id, recv_ip, recv_port): 
         '''
         Send message to receiver.
         
@@ -40,11 +39,9 @@ class Submitter(object):
         @param port: destination port
         @type port: string 
         
-        @return: -1: if the receiver not reachable, 0: if the receiver confirmed the message
-        '''  
         
-        __send_successful = -1
-             
+        '''  
+                     
         # create ZMQ context
         __context = zmq.Context()
         # set max time for send a message
@@ -54,15 +51,32 @@ class Submitter(object):
         # create ZMQ_PUSH Socket        
         __socket = __context.socket(PUSH)
         #self.__context.setsockopt(LINGER, 0)        
-        self.__LOGGER.debug(subm_id + " connect to: ip - " + str(recv_ip) + " port - " + str(recv_port))
+        #self.__LOGGER.debug(subm_id + " connect to: ip - " + str(recv_ip) + " port - " + str(recv_port))
+        self.__LOGGER.debug(Node.getIdent() + " connect to: ip - " + message.getRecvIp() + " port - " + message.getRecvPort())
         # bind socket to ip and port        
-        __socket.connect("tcp://" + str(recv_ip) + ":" + str(recv_port))
-        self.__LOGGER.info(subm_id + " send message an [" + recv_id + "]: " + message)        
-        # send message
-        __socket.send_string(node_message.createMessageStr(subm_id, subm_ip, subm_port, recv_id, recv_ip, recv_port, message))
+        __socket.connect("tcp://" + message.getRecvIp() + ":" + message.getRecvPort())
+        #self.__LOGGER.info(subm_id + " send message an [" + recv_id + "]: " + message)  
+              
+        # send message        
+        Node.incLocalTime()
+        message.setVectorTime(Node.getVectorTime())
+        self.__LOGGER.info(self.__getLogString(Node, message))
+                           
+        __socket.send_string(message.toJson())
         __socket.close()
         __context.destroy()
-            
+    
+    
+    def getLogger(self):
+        return self.__LOGGER
+    
+    def __getLogString(self, node, msg):
+        ident = node.getIdent()
+        recv_id = msg.getRecvId()
+        
+        recv_str = ident + " send message on [" + recv_id + "]: " + str(msg)
+        return recv_str
+          
     def __del__(self):
         pass
     

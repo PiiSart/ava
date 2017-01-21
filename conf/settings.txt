@@ -15,13 +15,13 @@ NODE_FILE ../../conf/node_list.txt
 MAX_NEIGHBORS 3
 
 # number of nodes
-NODES 100
+NODES 3
 
 # number of edges
-EDGES 180
+EDGES 3
 
 # number of nodes until the node trust them whisper
-TRUST 4
+TRUST 1
 
 # ZMQ options
 # timeout for send (-1 : infinity) in milliseconds
