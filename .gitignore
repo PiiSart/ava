@@ -1,3 +1,7 @@
 # eclipse
 .project
 .pydevproject
+
+# ignore binarys
+*.pyc
+__pycache__/
