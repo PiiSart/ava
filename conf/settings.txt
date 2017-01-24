@@ -14,18 +14,22 @@ NODE_FILE ../../conf/node_list.txt
 # number of neighbors per node (if GRAPHVIZ is 0)
 MAX_NEIGHBORS 3
 
-# number of nodes
+# total number of nodes
 NODES 3
 
 # number of edges
 EDGES 3
 
-# number of nodes until the node trust them whisper
+# number of nodes until the node trust them whisper (in U2 number of responses until candidate start new call)
 TRUST 1
 
 # ZMQ options
 # timeout for send (-1 : infinity) in milliseconds
-LINGER_TIME 5000
+LINGER_TIME 2000
 
 # timeout for receive (-1 : infinity) in milliseconds
-RCVTIMEO_TIME 3000
+RCVTIMEO_TIME 2000
+
+# candidate nodes (value: node id)
+CANDIDATE 5
+CANDIDATE 1

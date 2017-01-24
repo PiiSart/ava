@@ -27,7 +27,16 @@ class Receiver(object):
         '''           
         self.__LOGGER = NodeLogger().getLoggerInstance(NodeLogger.RECEIVER);
         self.__node = Node
-        self.__knowWhisper = False
+        self.__quit = False
+        self.__knowRumor = False
+        
+        # message handler
+        self.__MSG_HANDLER = {
+            MsgType.QUIT : self.__shutdownHandler,
+            MsgType.MESSAGE : self.__messageHandler,
+            MsgType.RUMOR : self.__rumorHandler,
+            MsgType.RUMOR_STATE : self.__rumorStateHandler
+        }
        
     def start(self, ip, port):
         '''
@@ -47,7 +56,7 @@ class Receiver(object):
         
         self.__LOGGER.debug(self.__node.getIdent() + "receiver is started: ip - " + str(ip) + " - port - " + str(port) + "\n")
         
-        while True:
+        while self.__quit == False:
             # receive message
             msg_str = self.__socket.recv_string()
             
@@ -57,30 +66,13 @@ class Receiver(object):
             self.__msg.toMessage(msg_str)
             # update vector time
             self.__msg.setVectorTime(self.__node.setVectorTimeByReceive(self.__msg.getVectorTime()))
-             
+            # print message to STDOUT
             self.__LOGGER.info(self.__getLogString(self.__msg))
-                        
-            # shutdown receiver, if message = node_message.QUIT
-            if self.__msg.getMsgType() == MsgType.QUIT:                
-                self.__LOGGER.info(self.__node.getIdent() + "i am down ... :-(")
-                break
-            # whisper
-            if(self.__msg.getMsgType() == MsgType.RUMOR):
-                if  self.__knowWhisper == False:
-                    self.__LOGGER.debug(self.__node.getIdent() + " im not know rumor!")
-                    self.__knowWhisper = True
-                    self.__node.incWhisperCount()
-                    #msg = self.__message
-                    self.__node.tellWhisperToNeighbors(self.__msg)
-                
-                else:
-                    #msg = self.__message
-                    self.__node.appendWhisperer(self.__msg.getSubmId())                    
-                    self.__node.incWhisperCount()
-            # rumor state
-            if self.__msg.getMsgType() == MsgType.RUMOR_STATE:
-                #msg = self.__message
-                self.__node.getWhisperState(self.__msg)
+            # handle message
+            try:                       
+                self.__receiverHandler(self.__msg)
+            except KeyError:
+                self.__LOGGER.error(self.__node.getIdent() + " unknown message type [" + self.__msg.getMsgType() + "]")
                     
         self.__LOGGER.debug(self.__node.getIdent() + "shutdown receiver: ip - " + str(ip) + " port - " + str(port) + " ...")
         self.__clear()        
@@ -102,8 +94,64 @@ class Receiver(object):
         recv_str = ident + " receive message from [" + subm_id + "]: " + str(msg)
         return recv_str
         
+    
+    def __receiverHandler(self, msg):
+        '''
+        Handle incoming messages based on MsgType's
         
+        @param msg: receivd message
+        @type msg: NodeMessage
+        '''   
+        # call handler based on MsgType
+        handler = self.__MSG_HANDLER[msg.getMsgType()]
+        handler(msg)
+    
+    def __shutdownHandler(self, msg):
+        '''
+        Handle MsgType.QUIT
         
+        @param msg: received message
+        @type msg: NodeMessage
+        '''
+        self.__quit = True
+        self.__LOGGER.info(self.__node.getIdent() + "i am down ... :-(")
+           
+    def __messageHandler(self, msg):
+        '''
+        Handle MsgType.MESSAGE
+        
+        @param msg: received message
+        @type msg: NodeMessage
+        '''
+        # is nothing to do ;-)
+        pass
+    
+    def __rumorHandler(self, msg):
+        '''
+        Handle MsgType.RUMOR
+        
+        @param msg: received message
+        @type msg: NodeMessage
+        '''
+        if  self.__knowRumor == False:
+            self.__LOGGER.debug(self.__node.getIdent() + " im not know rumor!")
+            self.__knowRumor = True
+            self.__node.incRumorCount()
+            self.__node.tellRumorToNeighbors(msg)
+        
+        else:
+            self.__node.appendWhisperer(msg.getSubmId())                    
+            self.__node.incRumorCount()
+            
+    def __rumorStateHandler(self, msg):
+        '''
+        Handle MsgType.RUMOR_STATE
+        
+        @param msg: received message
+        @type msg: NodeMessage
+        '''
+        self.__node.getRumorState(msg)
+    
     def __del__(self):
         '''        
         '''

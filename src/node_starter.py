@@ -55,15 +55,10 @@ def __startNodes():
     '''
     __LOGGER.info(__IDENT + " start nodes ...")
     for i in range(0, len(__NODES)):
-        process_list.append(mp.Process(target=Node, args=(str(i), )))
+        node = Node(str(i))
+        process_list.append(mp.Process(target=node.start))#, args=(str(i), )))
         process_list[i].start()
-      
-@deprecated
-def __shutdownNodes():
-    for i in range(0, len(process_list)):
-            Submitter().send_message("quit", __IDENT, "127.0.0.1", "5000", str(__NODES[str(i)]["id"]), str(__NODES[str(i)]["ip"]), str(__NODES[str(i)]["port"]))
-   
-
+  
 if __name__ == '__main__':
     __pref = Settings()
     __pref.loadSettings()

@@ -38,13 +38,15 @@ class Settings(object):
             "NODES" : self.__setNumberOfNodes,
             "EDGES" : self.__setNumberOfEdges,
             "LINGER_TIME" : self.__setLingerTime,
-            "RCVTIMEO_TIME" : self.__setRcvtimeoTime            
+            "RCVTIMEO_TIME" : self.__setRcvtimeoTime,
+            "CANDIDATE" : self.__addCandidate          
         }
         self.__TRUST = 0
         self.__NUMBER_OF_NODES = 0
         self.__NUMBER_OF_EDGES = 0
         self.__LINGER_TIME = -1
         self.__RCVTIMEO_TIME = -1
+        self.__CANDIDATE = []
                
         
     def loadSettings(self):
@@ -150,6 +152,12 @@ class Settings(object):
     
     def getRcvtimeoTime(self):
         return self.__RCVTIMEO_TIME
+    
+    def __addCandidate(self, value):
+        self.__CANDIDATE.append(value)
+    
+    def getCandidateList(self):
+        return self.__CANDIDATE
                  
     def __readNodeInfosGraphviz(self):    
         '''

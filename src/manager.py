@@ -106,7 +106,7 @@ def __print_menue():
     print("* 2: Shutdown node            *")
     print("* 3: Shutdown all nodes       *")
     print("* 4: Send message             *")
-    print("* 5: Tell whisper             *")
+    print("* 5: Tell rumor               *")
     print("* 7: Statistic                *")
     print("* 8: Get whisper state        *")
     print("* 0: Exit manager             *")
@@ -195,7 +195,7 @@ def __sendMsgToNode():
     msg = input("Message to send: ")
     __send(node_id, MsgType.MESSAGE, msg) 
 
-def __tellWhisper():
+def __tellRumor():
     '''
     Read node id from stdoin and call __doWhisper(..) to
     send a rumor to the node
@@ -272,7 +272,7 @@ options = {
         2 : __shutdownNode,
         3 : __shutdownNodes,
         4 : __sendMsgToNode,
-        5 : __tellWhisper,
+        5 : __tellRumor,
         7 : __getStatistic,
         8 : __getWhisperState,
     }

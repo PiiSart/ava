@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>node.node_submitter</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >AVA - U2</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="node-module.html">Package&nbsp;node</a> ::
+        Module&nbsp;node_submitter
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="node.node_submitter-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="node.node_submitter-module.html">Module node.node_submitter</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno"> 1</tt>  <tt class="py-line"><tt class="py-comment">#!/usr/bin/python3</tt> </tt>
+<a name="L2"></a><tt class="py-lineno"> 2</tt>  <tt class="py-line"><tt class="py-docstring">'''</tt> </tt>
+<a name="L3"></a><tt class="py-lineno"> 3</tt>  <tt class="py-line"><tt class="py-docstring">Created on 05.12.2016</tt> </tt>
+<a name="L4"></a><tt class="py-lineno"> 4</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L5"></a><tt class="py-lineno"> 5</tt>  <tt class="py-line"><tt class="py-docstring">@author: Viktor Werle</tt> </tt>
+<a name="L6"></a><tt class="py-lineno"> 6</tt>  <tt class="py-line"><tt class="py-docstring">'''</tt> </tt>
+<a name="L7"></a><tt class="py-lineno"> 7</tt>  <tt class="py-line"> </tt>
+<a name="L8"></a><tt class="py-lineno"> 8</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">zmq</tt> </tt>
+<a name="L9"></a><tt class="py-lineno"> 9</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">zmq</tt><tt class="py-op">.</tt><tt class="py-name">backend</tt><tt class="py-op">.</tt><tt class="py-name">cython</tt><tt class="py-op">.</tt><tt class="py-name">constants</tt> <tt class="py-keyword">import</tt> <tt class="py-name">LINGER</tt><tt class="py-op">,</tt> <tt class="py-name">PUSH</tt> </tt>
+<a name="L10"></a><tt class="py-lineno">10</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-0" class="py-name" targets="Package logger=logger-module.html,Module logger.logger=logger.logger-module.html"><a title="logger
+logger.logger" class="py-name" href="#" onclick="return doclink('link-0', 'logger', 'link-0');">logger</a></tt><tt class="py-op">.</tt><tt id="link-1" class="py-name"><a title="logger
+logger.logger" class="py-name" href="#" onclick="return doclink('link-1', 'logger', 'link-0');">logger</a></tt> <tt class="py-keyword">import</tt> <tt id="link-2" class="py-name" targets="Class logger.logger.NodeLogger=logger.logger.NodeLogger-class.html"><a title="logger.logger.NodeLogger" class="py-name" href="#" onclick="return doclink('link-2', 'NodeLogger', 'link-2');">NodeLogger</a></tt> </tt>
+<a name="L11"></a><tt class="py-lineno">11</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-3" class="py-name" targets="Package util=util-module.html"><a title="util" class="py-name" href="#" onclick="return doclink('link-3', 'util', 'link-3');">util</a></tt><tt class="py-op">.</tt><tt id="link-4" class="py-name" targets="Module util.settings=util.settings-module.html"><a title="util.settings" class="py-name" href="#" onclick="return doclink('link-4', 'settings', 'link-4');">settings</a></tt> <tt class="py-keyword">import</tt> <tt id="link-5" class="py-name" targets="Class util.settings.Settings=util.settings.Settings-class.html"><a title="util.settings.Settings" class="py-name" href="#" onclick="return doclink('link-5', 'Settings', 'link-5');">Settings</a></tt> </tt>
+<a name="L12"></a><tt class="py-lineno">12</tt>  <tt class="py-line"> </tt>
+<a name="L13"></a><tt class="py-lineno">13</tt>  <tt class="py-line"> </tt>
+<a name="Submitter"></a><div id="Submitter-def"><a name="L14"></a><tt class="py-lineno">14</tt> <a class="py-toggle" href="#" id="Submitter-toggle" onclick="return toggle('Submitter');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="node.node_submitter.Submitter-class.html">Submitter</a><tt class="py-op">(</tt><tt class="py-base-class">object</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Submitter-collapsed" style="display:none;" pad="++" indent="++++"></div><div id="Submitter-expanded"><a name="L15"></a><tt class="py-lineno">15</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L16"></a><tt class="py-lineno">16</tt>  <tt class="py-line"><tt class="py-docstring">    Simple node submitter for sending messages to node receiver.</tt> </tt>
+<a name="L17"></a><tt class="py-lineno">17</tt>  <tt class="py-line"><tt class="py-docstring">    Implements with 0MQ library</tt> </tt>
+<a name="L18"></a><tt class="py-lineno">18</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L19"></a><tt class="py-lineno">19</tt>  <tt class="py-line">     </tt>
+<a name="Submitter.__init__"></a><div id="Submitter.__init__-def"><a name="L20"></a><tt class="py-lineno">20</tt> <a class="py-toggle" href="#" id="Submitter.__init__-toggle" onclick="return toggle('Submitter.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="node.node_submitter.Submitter-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Submitter.__init__-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Submitter.__init__-expanded"><a name="L21"></a><tt class="py-lineno">21</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L22"></a><tt class="py-lineno">22</tt>  <tt class="py-line"><tt class="py-docstring">        Constructor</tt> </tt>
+<a name="L23"></a><tt class="py-lineno">23</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt>    </tt>
+<a name="L24"></a><tt class="py-lineno">24</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-6" class="py-name" targets="Variable manager.__LOGGER=manager-module.html#__LOGGER,Variable node_starter.__LOGGER=node_starter-module.html#__LOGGER"><a title="manager.__LOGGER
+node_starter.__LOGGER" class="py-name" href="#" onclick="return doclink('link-6', '__LOGGER', 'link-6');">__LOGGER</a></tt> <tt class="py-op">=</tt> <tt id="link-7" class="py-name"><a title="logger.logger.NodeLogger" class="py-name" href="#" onclick="return doclink('link-7', 'NodeLogger', 'link-2');">NodeLogger</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt id="link-8" class="py-name" targets="Method logger.logger.NodeLogger.getLoggerInstance()=logger.logger.NodeLogger-class.html#getLoggerInstance"><a title="logger.logger.NodeLogger.getLoggerInstance" class="py-name" href="#" onclick="return doclink('link-8', 'getLoggerInstance', 'link-8');">getLoggerInstance</a></tt><tt class="py-op">(</tt><tt id="link-9" class="py-name"><a title="logger.logger.NodeLogger" class="py-name" href="#" onclick="return doclink('link-9', 'NodeLogger', 'link-2');">NodeLogger</a></tt><tt class="py-op">.</tt><tt id="link-10" class="py-name" targets="Variable logger.logger.NodeLogger.SUBMITTER=logger.logger.NodeLogger-class.html#SUBMITTER"><a title="logger.logger.NodeLogger.SUBMITTER" class="py-name" href="#" onclick="return doclink('link-10', 'SUBMITTER', 'link-10');">SUBMITTER</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L25"></a><tt class="py-lineno">25</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">__settings</tt> <tt class="py-op">=</tt> <tt id="link-11" class="py-name"><a title="util.settings.Settings" class="py-name" href="#" onclick="return doclink('link-11', 'Settings', 'link-5');">Settings</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L26"></a><tt class="py-lineno">26</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">__settings</tt><tt class="py-op">.</tt><tt id="link-12" class="py-name" targets="Method util.settings.Settings.loadSettings()=util.settings.Settings-class.html#loadSettings"><a title="util.settings.Settings.loadSettings" class="py-name" href="#" onclick="return doclink('link-12', 'loadSettings', 'link-12');">loadSettings</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt>         </tt>
+</div><a name="L27"></a><tt class="py-lineno">27</tt>  <tt class="py-line">         </tt>
+<a name="L28"></a><tt class="py-lineno">28</tt>  <tt class="py-line">     </tt>
+<a name="Submitter.send_message"></a><div id="Submitter.send_message-def"><a name="L29"></a><tt class="py-lineno">29</tt> <a class="py-toggle" href="#" id="Submitter.send_message-toggle" onclick="return toggle('Submitter.send_message');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="node.node_submitter.Submitter-class.html#send_message">send_message</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">Node</tt><tt class="py-op">,</tt> <tt class="py-param">message</tt><tt class="py-op">)</tt><tt class="py-op">:</tt><tt class="py-comment">#, subm_id, subm_ip, subm_port, recv_id, recv_ip, recv_port): </tt> </tt>
+</div><a name="L30"></a><tt class="py-lineno">30</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L31"></a><tt class="py-lineno">31</tt>  <tt class="py-line"><tt class="py-docstring">        Send message to receiver.</tt> </tt>
+<a name="L32"></a><tt class="py-lineno">32</tt>  <tt class="py-line"><tt class="py-docstring">        </tt> </tt>
+<a name="L33"></a><tt class="py-lineno">33</tt>  <tt class="py-line"><tt class="py-docstring">        @param message: message to be send</tt> </tt>
+<a name="L34"></a><tt class="py-lineno">34</tt>  <tt class="py-line"><tt class="py-docstring">        @type message: string</tt> </tt>
+<a name="L35"></a><tt class="py-lineno">35</tt>  <tt class="py-line"><tt class="py-docstring">        @param id: node id from sender</tt> </tt>
+<a name="L36"></a><tt class="py-lineno">36</tt>  <tt class="py-line"><tt class="py-docstring">        @type id: string</tt> </tt>
+<a name="L37"></a><tt class="py-lineno">37</tt>  <tt class="py-line"><tt class="py-docstring">        @param ip: destination ip</tt> </tt>
+<a name="L38"></a><tt class="py-lineno">38</tt>  <tt class="py-line"><tt class="py-docstring">        @type ip: string</tt> </tt>
+<a name="L39"></a><tt class="py-lineno">39</tt>  <tt class="py-line"><tt class="py-docstring">        @param port: destination port</tt> </tt>
+<a name="L40"></a><tt class="py-lineno">40</tt>  <tt class="py-line"><tt class="py-docstring">        @type port: string </tt> </tt>
+<a name="L41"></a><tt class="py-lineno">41</tt>  <tt class="py-line"><tt class="py-docstring">        </tt> </tt>
+<a name="L42"></a><tt class="py-lineno">42</tt>  <tt class="py-line"><tt class="py-docstring">        </tt> </tt>
+<a name="L43"></a><tt class="py-lineno">43</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt>   </tt>
+<a name="L44"></a><tt class="py-lineno">44</tt>  <tt class="py-line">                      </tt>
+<a name="L45"></a><tt class="py-lineno">45</tt>  <tt class="py-line">        <tt class="py-comment"># create ZMQ context</tt> </tt>
+<a name="L46"></a><tt class="py-lineno">46</tt>  <tt class="py-line">        <tt class="py-name">__context</tt> <tt class="py-op">=</tt> <tt class="py-name">zmq</tt><tt class="py-op">.</tt><tt class="py-name">Context</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L47"></a><tt class="py-lineno">47</tt>  <tt class="py-line">        <tt class="py-comment"># set max time for send a message</tt> </tt>
+<a name="L48"></a><tt class="py-lineno">48</tt>  <tt class="py-line">        <tt class="py-name">__context</tt><tt class="py-op">.</tt><tt class="py-name">setsockopt</tt><tt class="py-op">(</tt><tt class="py-name">LINGER</tt><tt class="py-op">,</tt> <tt class="py-name">int</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">__settings</tt><tt class="py-op">.</tt><tt id="link-13" class="py-name" targets="Method util.settings.Settings.getLingerTime()=util.settings.Settings-class.html#getLingerTime"><a title="util.settings.Settings.getLingerTime" class="py-name" href="#" onclick="return doclink('link-13', 'getLingerTime', 'link-13');">getLingerTime</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-comment">#node_message.LINGER_TIME)</tt> </tt>
+<a name="L49"></a><tt class="py-lineno">49</tt>  <tt class="py-line">        <tt class="py-comment"># set max time for receive a response</tt> </tt>
+<a name="L50"></a><tt class="py-lineno">50</tt>  <tt class="py-line">        <tt class="py-comment">#__context.setsockopt(RCVTIMEO, node_message.RCVTIMEO_TIME)</tt> </tt>
+<a name="L51"></a><tt class="py-lineno">51</tt>  <tt class="py-line">        <tt class="py-comment"># create ZMQ_PUSH Socket        </tt> </tt>
+<a name="L52"></a><tt class="py-lineno">52</tt>  <tt class="py-line">        <tt class="py-name">__socket</tt> <tt class="py-op">=</tt> <tt class="py-name">__context</tt><tt class="py-op">.</tt><tt class="py-name">socket</tt><tt class="py-op">(</tt><tt class="py-name">PUSH</tt><tt class="py-op">)</tt> </tt>
+<a name="L53"></a><tt class="py-lineno">53</tt>  <tt class="py-line">        <tt class="py-comment">#self.__context.setsockopt(LINGER, 0)        </tt> </tt>
+<a name="L54"></a><tt class="py-lineno">54</tt>  <tt class="py-line">        <tt class="py-comment">#self.__LOGGER.debug(subm_id + " connect to: ip - " + str(recv_ip) + " port - " + str(recv_port))</tt> </tt>
+<a name="L55"></a><tt class="py-lineno">55</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-14" class="py-name"><a title="manager.__LOGGER
+node_starter.__LOGGER" class="py-name" href="#" onclick="return doclink('link-14', '__LOGGER', 'link-6');">__LOGGER</a></tt><tt class="py-op">.</tt><tt class="py-name">debug</tt><tt class="py-op">(</tt><tt id="link-15" class="py-name" targets="Class node.node.Node=node.node.Node-class.html"><a title="node.node.Node" class="py-name" href="#" onclick="return doclink('link-15', 'Node', 'link-15');">Node</a></tt><tt class="py-op">.</tt><tt id="link-16" class="py-name" targets="Method node.node.Node.getIdent()=node.node.Node-class.html#getIdent"><a title="node.node.Node.getIdent" class="py-name" href="#" onclick="return doclink('link-16', 'getIdent', 'link-16');">getIdent</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> <tt class="py-op">+</tt> <tt class="py-string">" connect to: ip - "</tt> <tt class="py-op">+</tt> <tt class="py-name">message</tt><tt class="py-op">.</tt><tt id="link-17" class="py-name" targets="Method node.node_message.Message.getRecvIp()=node.node_message.Message-class.html#getRecvIp"><a title="node.node_message.Message.getRecvIp" class="py-name" href="#" onclick="return doclink('link-17', 'getRecvIp', 'link-17');">getRecvIp</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> <tt class="py-op">+</tt> <tt class="py-string">" port - "</tt> <tt class="py-op">+</tt> <tt class="py-name">message</tt><tt class="py-op">.</tt><tt id="link-18" class="py-name" targets="Method node.node_message.Message.getRecvPort()=node.node_message.Message-class.html#getRecvPort"><a title="node.node_message.Message.getRecvPort" class="py-name" href="#" onclick="return doclink('link-18', 'getRecvPort', 'link-18');">getRecvPort</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L56"></a><tt class="py-lineno">56</tt>  <tt class="py-line">        <tt class="py-comment"># bind socket to ip and port        </tt> </tt>
+<a name="L57"></a><tt class="py-lineno">57</tt>  <tt class="py-line">        <tt class="py-name">__socket</tt><tt class="py-op">.</tt><tt class="py-name">connect</tt><tt class="py-op">(</tt><tt class="py-string">"tcp://"</tt> <tt class="py-op">+</tt> <tt class="py-name">message</tt><tt class="py-op">.</tt><tt id="link-19" class="py-name"><a title="node.node_message.Message.getRecvIp" class="py-name" href="#" onclick="return doclink('link-19', 'getRecvIp', 'link-17');">getRecvIp</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> <tt class="py-op">+</tt> <tt class="py-string">":"</tt> <tt class="py-op">+</tt> <tt class="py-name">message</tt><tt class="py-op">.</tt><tt id="link-20" class="py-name"><a title="node.node_message.Message.getRecvPort" class="py-name" href="#" onclick="return doclink('link-20', 'getRecvPort', 'link-18');">getRecvPort</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L58"></a><tt class="py-lineno">58</tt>  <tt class="py-line">        <tt class="py-comment">#self.__LOGGER.info(subm_id + " send message an [" + recv_id + "]: " + message)  </tt> </tt>
+<a name="L59"></a><tt class="py-lineno">59</tt>  <tt class="py-line">               </tt>
+<a name="L60"></a><tt class="py-lineno">60</tt>  <tt class="py-line">        <tt class="py-comment"># send message        </tt> </tt>
+<a name="L61"></a><tt class="py-lineno">61</tt>  <tt class="py-line">        <tt id="link-21" class="py-name"><a title="node.node.Node" class="py-name" href="#" onclick="return doclink('link-21', 'Node', 'link-15');">Node</a></tt><tt class="py-op">.</tt><tt id="link-22" class="py-name" targets="Method node.node.Node.incLocalTime()=node.node.Node-class.html#incLocalTime"><a title="node.node.Node.incLocalTime" class="py-name" href="#" onclick="return doclink('link-22', 'incLocalTime', 'link-22');">incLocalTime</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L62"></a><tt class="py-lineno">62</tt>  <tt class="py-line">        <tt class="py-name">message</tt><tt class="py-op">.</tt><tt id="link-23" class="py-name" targets="Method node.node_message.Message.setVectorTime()=node.node_message.Message-class.html#setVectorTime"><a title="node.node_message.Message.setVectorTime" class="py-name" href="#" onclick="return doclink('link-23', 'setVectorTime', 'link-23');">setVectorTime</a></tt><tt class="py-op">(</tt><tt id="link-24" class="py-name"><a title="node.node.Node" class="py-name" href="#" onclick="return doclink('link-24', 'Node', 'link-15');">Node</a></tt><tt class="py-op">.</tt><tt id="link-25" class="py-name" targets="Method node.node.Node.getVectorTime()=node.node.Node-class.html#getVectorTime,Method node.node_message.Message.getVectorTime()=node.node_message.Message-class.html#getVectorTime"><a title="node.node.Node.getVectorTime
+node.node_message.Message.getVectorTime" class="py-name" href="#" onclick="return doclink('link-25', 'getVectorTime', 'link-25');">getVectorTime</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L63"></a><tt class="py-lineno">63</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-26" class="py-name"><a title="manager.__LOGGER
+node_starter.__LOGGER" class="py-name" href="#" onclick="return doclink('link-26', '__LOGGER', 'link-6');">__LOGGER</a></tt><tt class="py-op">.</tt><tt class="py-name">info</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-27" class="py-name" targets="Method manager.ManSubmitter.__getLogString()=manager.ManSubmitter-class.html#__getLogString,Method node.node_receiver.Receiver.__getLogString()=node.node_receiver.Receiver-class.html#__getLogString,Method node.node_submitter.Submitter.__getLogString()=node.node_submitter.Submitter-class.html#__getLogString"><a title="manager.ManSubmitter.__getLogString
+node.node_receiver.Receiver.__getLogString
+node.node_submitter.Submitter.__getLogString" class="py-name" href="#" onclick="return doclink('link-27', '__getLogString', 'link-27');">__getLogString</a></tt><tt class="py-op">(</tt><tt id="link-28" class="py-name"><a title="node.node.Node" class="py-name" href="#" onclick="return doclink('link-28', 'Node', 'link-15');">Node</a></tt><tt class="py-op">,</tt> <tt class="py-name">message</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L64"></a><tt class="py-lineno">64</tt>  <tt class="py-line">                            </tt>
+<a name="L65"></a><tt class="py-lineno">65</tt>  <tt class="py-line">        <tt class="py-name">__socket</tt><tt class="py-op">.</tt><tt class="py-name">send_string</tt><tt class="py-op">(</tt><tt class="py-name">message</tt><tt class="py-op">.</tt><tt id="link-29" class="py-name" targets="Method node.node_message.Message.toJson()=node.node_message.Message-class.html#toJson"><a title="node.node_message.Message.toJson" class="py-name" href="#" onclick="return doclink('link-29', 'toJson', 'link-29');">toJson</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L66"></a><tt class="py-lineno">66</tt>  <tt class="py-line">        <tt class="py-name">__socket</tt><tt class="py-op">.</tt><tt class="py-name">close</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L67"></a><tt class="py-lineno">67</tt>  <tt class="py-line">        <tt class="py-name">__context</tt><tt class="py-op">.</tt><tt class="py-name">destroy</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L68"></a><tt class="py-lineno">68</tt>  <tt class="py-line">     </tt>
+<a name="L69"></a><tt class="py-lineno">69</tt>  <tt class="py-line">     </tt>
+<a name="Submitter.getLogger"></a><div id="Submitter.getLogger-def"><a name="L70"></a><tt class="py-lineno">70</tt> <a class="py-toggle" href="#" id="Submitter.getLogger-toggle" onclick="return toggle('Submitter.getLogger');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="node.node_submitter.Submitter-class.html#getLogger">getLogger</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Submitter.getLogger-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Submitter.getLogger-expanded"><a name="L71"></a><tt class="py-lineno">71</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-30" class="py-name"><a title="manager.__LOGGER
+node_starter.__LOGGER" class="py-name" href="#" onclick="return doclink('link-30', '__LOGGER', 'link-6');">__LOGGER</a></tt> </tt>
+</div><a name="L72"></a><tt class="py-lineno">72</tt>  <tt class="py-line">     </tt>
+<a name="Submitter.__getLogString"></a><div id="Submitter.__getLogString-def"><a name="L73"></a><tt class="py-lineno">73</tt> <a class="py-toggle" href="#" id="Submitter.__getLogString-toggle" onclick="return toggle('Submitter.__getLogString');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="node.node_submitter.Submitter-class.html#__getLogString">__getLogString</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">node</tt><tt class="py-op">,</tt> <tt class="py-param">msg</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Submitter.__getLogString-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Submitter.__getLogString-expanded"><a name="L74"></a><tt class="py-lineno">74</tt>  <tt class="py-line">        <tt class="py-name">ident</tt> <tt class="py-op">=</tt> <tt id="link-31" class="py-name" targets="Package node=node-module.html,Module node.node=node.node-module.html"><a title="node
+node.node" class="py-name" href="#" onclick="return doclink('link-31', 'node', 'link-31');">node</a></tt><tt class="py-op">.</tt><tt id="link-32" class="py-name"><a title="node.node.Node.getIdent" class="py-name" href="#" onclick="return doclink('link-32', 'getIdent', 'link-16');">getIdent</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L75"></a><tt class="py-lineno">75</tt>  <tt class="py-line">        <tt class="py-name">recv_id</tt> <tt class="py-op">=</tt> <tt class="py-name">msg</tt><tt class="py-op">.</tt><tt id="link-33" class="py-name" targets="Method node.node_message.Message.getRecvId()=node.node_message.Message-class.html#getRecvId"><a title="node.node_message.Message.getRecvId" class="py-name" href="#" onclick="return doclink('link-33', 'getRecvId', 'link-33');">getRecvId</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L76"></a><tt class="py-lineno">76</tt>  <tt class="py-line">         </tt>
+<a name="L77"></a><tt class="py-lineno">77</tt>  <tt class="py-line">        <tt class="py-name">recv_str</tt> <tt class="py-op">=</tt> <tt class="py-name">ident</tt> <tt class="py-op">+</tt> <tt class="py-string">" send message on ["</tt> <tt class="py-op">+</tt> <tt class="py-name">recv_id</tt> <tt class="py-op">+</tt> <tt class="py-string">"]: "</tt> <tt class="py-op">+</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">)</tt> </tt>
+<a name="L78"></a><tt class="py-lineno">78</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">recv_str</tt> </tt>
+</div><a name="L79"></a><tt class="py-lineno">79</tt>  <tt class="py-line">           </tt>
+<a name="Submitter.__del__"></a><div id="Submitter.__del__-def"><a name="L80"></a><tt class="py-lineno">80</tt> <a class="py-toggle" href="#" id="Submitter.__del__-toggle" onclick="return toggle('Submitter.__del__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="node.node_submitter.Submitter-class.html#__del__">__del__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Submitter.__del__-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Submitter.__del__-expanded"><a name="L81"></a><tt class="py-lineno">81</tt>  <tt class="py-line">        <tt class="py-keyword">pass</tt> </tt>
+</div></div><a name="L82"></a><tt class="py-lineno">82</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >AVA - U2</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1
+    on Sun Jan 22 18:38:37 2017
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

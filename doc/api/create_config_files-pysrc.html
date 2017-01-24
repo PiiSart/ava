@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>create_config_files</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >AVA - U2</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        Module&nbsp;create_config_files
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="create_config_files-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="create_config_files-module.html">Module create_config_files</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno"> 1</tt>  <tt class="py-line"><tt class="py-comment">#!/usr/bin/python3</tt> </tt>
+<a name="L2"></a><tt class="py-lineno"> 2</tt>  <tt class="py-line"><tt class="py-docstring">'''</tt> </tt>
+<a name="L3"></a><tt class="py-lineno"> 3</tt>  <tt class="py-line"><tt class="py-docstring">Created on 14.01.2017</tt> </tt>
+<a name="L4"></a><tt class="py-lineno"> 4</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L5"></a><tt class="py-lineno"> 5</tt>  <tt class="py-line"><tt class="py-docstring">Read from setting file the settings and create config files &lt;node_list.txt&gt; and &lt;graphviz.txt&gt;</tt> </tt>
+<a name="L6"></a><tt class="py-lineno"> 6</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L7"></a><tt class="py-lineno"> 7</tt>  <tt class="py-line"><tt class="py-docstring">@author: Viktor Werle</tt> </tt>
+<a name="L8"></a><tt class="py-lineno"> 8</tt>  <tt class="py-line"><tt class="py-docstring">'''</tt> </tt>
+<a name="L9"></a><tt class="py-lineno"> 9</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-0" class="py-name" targets="Package util=util-module.html"><a title="util" class="py-name" href="#" onclick="return doclink('link-0', 'util', 'link-0');">util</a></tt><tt class="py-op">.</tt><tt id="link-1" class="py-name" targets="Module util.settings=util.settings-module.html"><a title="util.settings" class="py-name" href="#" onclick="return doclink('link-1', 'settings', 'link-1');">settings</a></tt> <tt class="py-keyword">import</tt> <tt id="link-2" class="py-name" targets="Class util.settings.Settings=util.settings.Settings-class.html"><a title="util.settings.Settings" class="py-name" href="#" onclick="return doclink('link-2', 'Settings', 'link-2');">Settings</a></tt> </tt>
+<a name="L10"></a><tt class="py-lineno">10</tt>  <tt class="py-line"> </tt>
+<a name="L11"></a><tt class="py-lineno">11</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-3" class="py-name"><a title="util" class="py-name" href="#" onclick="return doclink('link-3', 'util', 'link-0');">util</a></tt><tt class="py-op">.</tt><tt id="link-4" class="py-name" targets="Module util.gen_node_list=util.gen_node_list-module.html"><a title="util.gen_node_list" class="py-name" href="#" onclick="return doclink('link-4', 'gen_node_list', 'link-4');">gen_node_list</a></tt> <tt class="py-keyword">import</tt> <tt id="link-5" class="py-name" targets="Function util.gen_node_list.__generate()=util.gen_node_list-module.html#__generate"><a title="util.gen_node_list.__generate" class="py-name" href="#" onclick="return doclink('link-5', '__generate', 'link-5');">__generate</a></tt> </tt>
+<a name="L12"></a><tt class="py-lineno">12</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt id="link-6" class="py-name"><a title="util" class="py-name" href="#" onclick="return doclink('link-6', 'util', 'link-0');">util</a></tt><tt class="py-op">.</tt><tt id="link-7" class="py-name" targets="Module util.graphgen=util.graphgen-module.html"><a title="util.graphgen" class="py-name" href="#" onclick="return doclink('link-7', 'graphgen', 'link-7');">graphgen</a></tt> <tt class="py-keyword">import</tt> <tt id="link-8" class="py-name" targets="Function util.graphgen.__createGraphviz()=util.graphgen-module.html#__createGraphviz"><a title="util.graphgen.__createGraphviz" class="py-name" href="#" onclick="return doclink('link-8', '__createGraphviz', 'link-8');">__createGraphviz</a></tt> </tt>
+<a name="L13"></a><tt class="py-lineno">13</tt>  <tt class="py-line"> </tt>
+<a name="writeSettingsFiles"></a><div id="writeSettingsFiles-def"><a name="L14"></a><tt class="py-lineno">14</tt> <a class="py-toggle" href="#" id="writeSettingsFiles-toggle" onclick="return toggle('writeSettingsFiles');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="create_config_files-module.html#writeSettingsFiles">writeSettingsFiles</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="writeSettingsFiles-collapsed" style="display:none;" pad="++" indent="++++"></div><div id="writeSettingsFiles-expanded"><a name="L15"></a><tt class="py-lineno">15</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L16"></a><tt class="py-lineno">16</tt>  <tt class="py-line"><tt class="py-docstring">    Create files 'node_list.txt' and 'graphviz.txt'. Exist files will be overwrite.</tt> </tt>
+<a name="L17"></a><tt class="py-lineno">17</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L18"></a><tt class="py-lineno">18</tt>  <tt class="py-line">    <tt id="link-9" class="py-name"><a title="util.settings" class="py-name" href="#" onclick="return doclink('link-9', 'settings', 'link-1');">settings</a></tt> <tt class="py-op">=</tt> <tt id="link-10" class="py-name"><a title="util.settings.Settings" class="py-name" href="#" onclick="return doclink('link-10', 'Settings', 'link-2');">Settings</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">;</tt> </tt>
+<a name="L19"></a><tt class="py-lineno">19</tt>  <tt class="py-line">    <tt id="link-11" class="py-name"><a title="util.settings" class="py-name" href="#" onclick="return doclink('link-11', 'settings', 'link-1');">settings</a></tt><tt class="py-op">.</tt><tt id="link-12" class="py-name" targets="Method util.settings.Settings.loadSettings()=util.settings.Settings-class.html#loadSettings"><a title="util.settings.Settings.loadSettings" class="py-name" href="#" onclick="return doclink('link-12', 'loadSettings', 'link-12');">loadSettings</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">;</tt> </tt>
+<a name="L20"></a><tt class="py-lineno">20</tt>  <tt class="py-line">    <tt class="py-comment"># generate node_list.txt</tt> </tt>
+<a name="L21"></a><tt class="py-lineno">21</tt>  <tt class="py-line">    <tt id="link-13" class="py-name"><a title="util.gen_node_list.__generate" class="py-name" href="#" onclick="return doclink('link-13', '__generate', 'link-5');">__generate</a></tt><tt class="py-op">(</tt><tt class="py-name">int</tt><tt class="py-op">(</tt><tt id="link-14" class="py-name"><a title="util.settings" class="py-name" href="#" onclick="return doclink('link-14', 'settings', 'link-1');">settings</a></tt><tt class="py-op">.</tt><tt id="link-15" class="py-name" targets="Method util.settings.Settings.getNumberOfNodes()=util.settings.Settings-class.html#getNumberOfNodes"><a title="util.settings.Settings.getNumberOfNodes" class="py-name" href="#" onclick="return doclink('link-15', 'getNumberOfNodes', 'link-15');">getNumberOfNodes</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L22"></a><tt class="py-lineno">22</tt>  <tt class="py-line">    <tt class="py-comment"># generate graphviz.txt</tt> </tt>
+<a name="L23"></a><tt class="py-lineno">23</tt>  <tt class="py-line">    <tt id="link-16" class="py-name"><a title="util.graphgen.__createGraphviz" class="py-name" href="#" onclick="return doclink('link-16', '__createGraphviz', 'link-8');">__createGraphviz</a></tt><tt class="py-op">(</tt><tt class="py-name">int</tt><tt class="py-op">(</tt><tt id="link-17" class="py-name"><a title="util.settings" class="py-name" href="#" onclick="return doclink('link-17', 'settings', 'link-1');">settings</a></tt><tt class="py-op">.</tt><tt id="link-18" class="py-name"><a title="util.settings.Settings.getNumberOfNodes" class="py-name" href="#" onclick="return doclink('link-18', 'getNumberOfNodes', 'link-15');">getNumberOfNodes</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">int</tt><tt class="py-op">(</tt><tt id="link-19" class="py-name"><a title="util.settings" class="py-name" href="#" onclick="return doclink('link-19', 'settings', 'link-1');">settings</a></tt><tt class="py-op">.</tt><tt id="link-20" class="py-name" targets="Method util.settings.Settings.getNumberOfEdges()=util.settings.Settings-class.html#getNumberOfEdges"><a title="util.settings.Settings.getNumberOfEdges" class="py-name" href="#" onclick="return doclink('link-20', 'getNumberOfEdges', 'link-20');">getNumberOfEdges</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L24"></a><tt class="py-lineno">24</tt>  <tt class="py-line"> </tt>
+<a name="L25"></a><tt class="py-lineno">25</tt>  <tt class="py-line"><tt class="py-keyword">if</tt> <tt class="py-name">__name__</tt> <tt class="py-op">==</tt> <tt class="py-string">'__main__'</tt><tt class="py-op">:</tt> </tt>
+<a name="L26"></a><tt class="py-lineno">26</tt>  <tt class="py-line">    <tt id="link-21" class="py-name" targets="Function create_config_files.writeSettingsFiles()=create_config_files-module.html#writeSettingsFiles"><a title="create_config_files.writeSettingsFiles" class="py-name" href="#" onclick="return doclink('link-21', 'writeSettingsFiles', 'link-21');">writeSettingsFiles</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L27"></a><tt class="py-lineno">27</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >AVA - U2</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1
+    on Sun Jan 22 18:38:37 2017
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>
