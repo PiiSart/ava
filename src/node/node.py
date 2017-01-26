@@ -16,6 +16,7 @@ from logger.logger import NodeLogger
 from util.settings import Settings
 from node.node_message import Message, MsgType
 from node.node_type import NodeType
+from abc import abstractmethod
 
 
 
@@ -36,48 +37,51 @@ class Node():
         @param id: my node id
         """
         
-        self.__LOGGER = NodeLogger().getLoggerInstance(NodeLogger.NODE) 
+        self._LOGGER = NodeLogger().getLoggerInstance(NodeLogger.NODE) 
         self.__ident = ("Node-ID-" + str(node_id) + " [PID:" + str(os.getpid()) + "] -> ")
-        self.__pref = Settings()
-        self.__pref.loadSettings()
+        self._pref = Settings()
+        self._pref.loadSettings()
         self.__rumor_count = 0
-        self.__count_voters_responses = 0
-        self.__nodeType = " "
-        self.__whisperer = []                
-        self.__config = self.__pref.getNodeInfos()
+        self.__whisperer = []
+        self.__neighbours = []                
+        self.__node_infos = self._pref.getNodeInfos()
+        # vector time
         self.__vector_time = self.__initVectorTime()        
-        self.__LOGGER.debug(self.__ident + " Vector time: " + str(list(self.__vector_time)))
+        self._LOGGER.debug(self.__ident + " Vector time: " + str(list(self.__vector_time)))
+        # echo algorithm
+        self.__echo_counts = {} # {"cand_id": <integer>, ...}
+        self.__first_link = {}  # {"cand_id": <node_id as a string>, ...}
+        #self.__explorer = {}    # {"cand_id": <boolean>, ...}
+        #self.__ready = {}       # {"cand_id": <boolean>, ...}
         
                    
         # apply node data
-        self.__LOGGER.debug(self.__ident + "save id: " + node_id);           
+        self._LOGGER.debug(self.__ident + "save id: " + node_id);           
         self.__id = node_id;
-        # set node type (voter or candidate)
-        self.__setNodeType()
         
-        self.__LOGGER.debug(self.__ident + "save port: " + str(self.__config[node_id]["port"]));
-        self.__port = self.__config[node_id]["port"]
+        self._LOGGER.debug(self.__ident + "save port: " + str(self.__node_infos[node_id]["port"]));
+        self.__port = self.__node_infos[node_id]["port"]
         
-        self.__LOGGER.debug(self.__ident + "save ip: " + self.__config[node_id]["ip"]);
-        self.__ip = self.__config[node_id]["ip"];
+        self._LOGGER.debug(self.__ident + "save ip: " + self.__node_infos[node_id]["ip"]);
+        self.__ip = self.__node_infos[node_id]["ip"];
         
         # define neighbors        
-        if self.__pref.isGraphviz() == True:
-            self.__neighbors_map = self.__pref.getNeigborsMap()
+        if self._pref.isGraphviz() == True:
+            neighbors_map = self._pref.getNeigborsMap()
             try:                            
-                self.__neighbours = self.__neighbors_map[self.__id]
-                self.__LOGGER.debug(self.__ident + " my neighbors are: " + str(self.__neighbours))
+                self.__neighbours = neighbors_map[self.__id]
+                self._LOGGER.debug(self.__ident + " my neighbors are: " + str(self.__neighbours))
             except KeyError:
-                self.__neighbours = []
-                self.__LOGGER.warning(self.__ident + " has no neighbors!")
+                #self.__neighbours = []
+                self._LOGGER.warning(self.__ident + " has no neighbors!")
         else:
-            self.__LOGGER.debug(self.__ident + " max number of neighbors: " + str(self.__pref.getMaxNeighbors()))
-            self.__neighbours = self.__defineNeighbours(int(self.__pref.getMaxNeighbors()));
+            self._LOGGER.debug(self.__ident + " max number of neighbors: " + str(self._pref.getMaxNeighbors()))
+            self.__neighbours = self.__defineNeighbours(int(self._pref.getMaxNeighbors()));
             
-        self.__LOGGER.debug(self.__ident + "selected neighbors: " + str(self.__neighbours));
+        self._LOGGER.debug(self.__ident + "selected neighbors: " + str(self.__neighbours));
         
         # who i am? candidate/voter
-        if self.__id in self.__pref.getCandidateList():
+        if self.__id in self._pref.getCandidateList():
             # i am candidate
             pass
         else:
@@ -93,7 +97,7 @@ class Node():
         Start node receiver in a thread.
         '''
         receiver_t = threading.Thread(target=self.__receiver.start, args=(self.__ip, self.__port))   
-        self.__LOGGER.debug(self.__ident + "starterd ...")     
+        self._LOGGER.debug(self.__ident + "starterd ...")     
         receiver_t.start() 
         # send own ID on all neighbours
         self.notifyNeighbours("my id is " + self.__id)
@@ -120,21 +124,176 @@ class Node():
     def getIP(self):
         return self.__ip; 
     
+    def getExplorerState(self, cand_id):
+        '''
+        Get state of the explorer.
+        True: node has the explorer message already received
+        False: in another case
+        
+        @param cand_id: candidaten id, who initiate a campaign
+        @type cand_id: string
+        
+        @return: True, if the node received an explorer. False in another case.
+        @type __explorer[cand_id]: boolean 
+        '''
+        if cand_id in self.__first_link:
+            return True
+        else:
+            return False
+    
+    #def setExplorerState(self, cand_id, state):
+        '''
+        Set the explorer state.
+                
+        @param state: explorer state
+        @type state: boolean
+        @param cand_id: candidate id from the candidate who initiate a campaign
+        @type cand_id: string
+        '''
+    #    self.__explorer[cand_id] = state
+    
+    def getFirstLinkId(self, cand_id):
+        '''
+        Get a first link (is a node id of which the node get a first explorer message) 
+        related to candidate.
+        
+        @param cand_id: candidate id from the candidate who initiate a campaign
+        @param cand_id: string
+        
+        @return: first link id or None if the candidate is not in the dictionary
+        @type __first_link_id[cand_id]: string or None
+        '''
+        if cand_id in self.__first_link:
+            return self.__first_link[cand_id]
+        else:
+            return None
+    
+    def setFirstLinkId(self, cand_id, f_link):
+        '''
+        Set a first link (is a node id of which the node get a first explorer message)
+        related to candidate.
+        
+        @param cand_id: candidate id from the candidate who initiate a campaign
+        @type cand_id: string
+        @param f_link_id: first link id
+        @type f_link_id: string
+        '''
+        self.__first_link[cand_id] = f_link
+        
+    def deleteFirstLinkId(self, cand_id):
+        '''
+        Delete first link id.
+        
+        @param cand_id: candidate id from the candidate who initiate a campaign
+        @type cand_id: string
+        '''
+        if cand_id in self.__first_link:
+            self.__first_link.pop(cand_id)
+        
+    def getReadyState(self, cand_id):
+        '''
+        Get a state of echo algorithm related to candidate.
+        
+        @param cand_id: candidate id from the candidate who initiate a campaign
+        @type cand_id: string
+        
+        @return: state of campaign. True if the campaign is over or not exists and False if the campaign is still run. 
+        @type __ready[cand_id]: boolean
+        '''
+        if cand_id in self.__ready:
+            return False#return self.__ready[cand_id]
+        else: # if cand_id not in the first link, than campaign doesn't exist
+            return True
+    
+    #def setReadyState(self, cand_id, ready_state):
+        '''
+        Set a state of echo algorithm related to candidate.
+        
+        @param cand_id: candidate id from the candidate who initiate a campaign
+        @type cand_id: string
+        @param ready: state of echo algorithm
+        @type ready: boolean
+        '''
+    #    self.__ready[cand_id] = ready_state
+    
+    #def getEchoCounts(self, cand_id):
+        '''
+        Get a number of received echo's related to candidate.
+        
+        @param cand_id: candidate id from the candidate who initiate a campaign
+        @type cand_id: string
+        
+        @return: number echo's or None if the cand_id not in the dictionary
+        @type __echo_counts[cand_id]: integer
+        '''
+    #    if cand_id in self.__echo_counts:
+    #        return self.__echo_counts[cand_id]
+    #    else:
+    #        return None
+    
+    def incEchoCounter(self, cand_id):
+        '''
+        Increase a number of received echo's related to candidate.
+        If the echo counter equals to number of neighbors, ready state will be set
+        of True.
+        
+        @param cand_id: candidate id from the candidate who initiate a campaign
+        @type cand_id: string
+        '''      
+        if cand_id in self.__echo_counts:
+            self.__echo_counts[cand_id] += 1
+            if self.__echo_counts[cand_id] == len(self.getNeighbors()):
+                self.setReadyState(cand_id, True)
+        else:
+            self.__echo_counts[cand_id] = 1
+            
+    
+    def resetEchoCounter(self, cand_id):
+        '''
+        Reset a number of received echo's from candidate with cand_id to 0.
+        
+        @param cand_id: candidate id from the candidate who initiate a campaign
+        @type cand_id: string
+        '''
+        if cand_id in self.__echo_counts:
+            self.__echo_counts[cand_id] = 0
+        
     def getNeighbors(self):
+        '''
+        Return a list with neighbors.
+        
+        @return: List with neighbors
+        @type self.__neighbours: list[string]
+        '''
         return self.__neighbours  
     
     def getNodeInfos(self):
-        return self.__config
+        '''
+        Return a list with nodes informations (id, ip, port)
+        
+        @return: List whti nodes informations
+        @type self.__node_infos: list[string]
+        '''
+        return self.__node_infos
     
     def getVectorTime(self):
-        return self.__vector_time
+        '''
+        Return local vector time
+        
+        @return: local vector time
+        @type self.__vector_time: list[integer]
+        '''
+        return self.__vector_time      
     
-    def getNodeType(self):
-        return self.__nodeType
-    
-    def getCountVotersResponse(self):
-        return self.__count_voters_responses
-    
+    def getEchoCounter(self):
+        '''
+        Return number of echo's
+        
+        @return: number of received echo's
+        @type self.__echo_counter: integer
+        '''
+        return self.__echo_counter
+                    
     def incRumorCount(self):
         '''
         Counts rumors
@@ -165,7 +324,7 @@ class Node():
         # set local time
         self.incLocalTime()
         # change time another nodes, except own local time
-        for i in range(int(self.__pref.getNumberOfNodes())):
+        for i in range(int(self._pref.getNumberOfNodes())):
             if i != int(self.__id):
                 self.__vector_time[i] = max(self.__vector_time[i], new_time[i])
         return self.__vector_time
@@ -177,25 +336,15 @@ class Node():
         @param message: full message (with header and data)
         @type message: compare node_message
         '''
-        self.__LOGGER.debug(self.__ident + "my neighbours: " + str(self.__neighbours))
+        self._LOGGER.debug(self.__ident + "my neighbours: " + str(self.__neighbours))
         msg_buf = Message()        
         for i in self.__neighbours:
-            msg_buf.init(self, self.__vector_time, str(self.__config[str(i)]["id"]), str(self.__config[str(i)]["ip"]), 
-                         str(self.__config[str(i)]["port"]), MsgType.MESSAGE, message)
+            msg_buf.setSubm(self.__id, self.__ip, self.__port)
+            msg_buf.setRecv(str(self.__node_infos[str(i)]["id"]), str(self.__node_infos[str(i)]["ip"]), 
+                         str(self.__node_infos[str(i)]["port"]))
+            msg_buf.create(self.__vector_time, MsgType.MESSAGE, message)
             Submitter().send_message(self, msg_buf)
-            
-    
-    def delNeighbours(self, node_id):
-        try:
-            self.__LOGGER.debug(self.__ident + "del node[" + node_id + "] ...")
-            index = self.__neighbours.index(int(node_id), )
-            self.__neighbours.pop(index)
-            self.__LOGGER.debug(self.__ident + "remaining neighbours: " + self.__neighbours)
-        except TypeError:
-            self.__LOGGER.info(self.__ident + "node[" + node_id + "]: not exist ...")
-        except ValueError:
-            self.__LOGGER.debug(self.__ident + "node[" + node_id + "]: is not my neighbours ...")
-    
+       
     def getRumorState(self, msg):
         '''
         Response a rumor state on requester.
@@ -206,62 +355,55 @@ class Node():
         @type msg: compare node_message
         '''
         
-        self.__LOGGER.info(self.__ident + " my whisperer: " + str(self.__whisperer))
+        self._LOGGER.info(self.__ident + " my whisperer: " + str(self.__whisperer))
         msg_buf = Message()
+        msg_buf.setSubm(self.__id, self.__ip, self.__port)
+        msg_buf.setRecv(msg.getSubmId(), msg.getSubmIp(), msg.getSubmPort())
+        
         # trust them rumor ?
-        if self.__rumor_count >= int(self.__pref.getTrust()):
-            self.__LOGGER.debug(self.__ident + " i'm trust rumor: rumor_count " + str(self.__rumor_count) + " trust value " + self.__pref.getTrust())            
-            msg_buf.init(self, self.__vector_time, msg.getSubmId(), msg.getSubmIp(), msg.getSubmPort(), MsgType.RUMOR_STATE, MsgType.TRUE)            
+        if self.__rumor_count >= int(self._pref.getTrust()):
+            self._LOGGER.debug(self.__ident + " i'm trust rumor: rumor_count " + str(self.__rumor_count) + " trust value " + self._pref.getTrust())            
+            msg_buf.create(self.__vector_time, MsgType.RUMOR_STATE, MsgType.TRUE)            
         else:
-            self.__LOGGER.debug(self.__ident + " i'm not trust rumor: whisper_count " + str(self.__rumor_count) + " trust value " + self.__pref.getTrust())
-            msg_buf.init(self, self.__vector_time, msg.getSubmId(), msg.getSubmIp(), msg.getSubmPort(), MsgType.RUMOR_STATE, MsgType.FALSE)            
+            self._LOGGER.debug(self.__ident + " i'm not trust rumor: whisper_count " + str(self.__rumor_count) + " trust value " + self._pref.getTrust())
+            msg_buf.create(self.__vector_time, MsgType.RUMOR_STATE, MsgType.FALSE)            
         Submitter().send_message(self, msg_buf)       
     
     def tellRumorToNeighbors(self, message):
         '''
         Send on his neighbors a rumor.
-        '''
-        
+        '''        
         self.__whisperer.append(message.getSubmId()) 
-        self.__LOGGER.debug(self.__ident + " my neighbours " + str(self.__neighbours))
+        self._LOGGER.debug(self.__ident + " my neighbours " + str(self.__neighbours))
         for n in self.__neighbours: 
             if str(n) != message.getSubmId() and (str(n) not in self.__whisperer):
-                self.__LOGGER.debug(self.__ident + "tell whisper on [" + n + "]")
+                self._LOGGER.debug(self.__ident + "tell whisper on [" + n + "]")
                 msg_buf = Message()
-                msg_buf.init(self, self.__vector_time, n, self.__config[n]["ip"], self.__config[n]["port"], MsgType.RUMOR, message.getMsg())
+                msg_buf.setSubm(self.__id, self.__ip, self.__port)
+                msg_buf.setRecv(n, self.__node_infos[n]["ip"], self.__node_infos[n]["port"])
+                msg_buf.init(self.__vector_time, MsgType.RUMOR, message.getMsg())
                 Submitter().send_message(self, msg_buf)
     
-    def incCountVotersResponses(self):
-        self.__count_voters_responses += 1
     
-    def startVoting(self):
+    @abstractmethod
+    def echo(self, msg = None):
         '''
-        Start random either voting or campaign
-        0 - start vote for me
-        1 - start campaign
+        Handle echo messages.
         '''
-        # reset voter response counter
-        self.__count_voters_responses = 0
-        
-        choose = random.randint(0,1)
-        
-        # start voting
-        self.__LOGGER.debug("%s start voting", self.__ident)
-        for n in self.__neighbours:
-            msg = Message()
-            if choose == 0:
-                msg.init(Node, self.__vector_time, n, self.__config[n]["ip"], self.__config[n]["port"], MsgType.VOTE_FOR_ME, " i am super, vote for me!")
-            else:
-                msg.init(Node, self.__vector_time, n, self.__config[n]["ip"], self.__config[n]["port"], MsgType.CAMPAIGN, " i am super, vote for me!")
-                
-            Submitter().send_message(Node, msg)
- 
+        pass
     
+       
     # private methods
        
     def __initVectorTime(self):
+        '''
+        Initialized local vector time with 0.
+        
+        @return: local vector time
+        @type vector: list[integer]
+        '''
         vector = []
-        for i in range(0, int(self.__pref.getNumberOfNodes())):
+        for i in range(0, int(self._pref.getNumberOfNodes())):
             vector.append(i - i) # init with zero
         return vector
     
@@ -273,7 +415,7 @@ class Node():
         @type node_id: int 
         @return: true if node list contain the node id, false in the oder case
         """       
-        return str(node_id) in self.__config.keys();
+        return str(node_id) in self.__node_infos.keys();
     
     def __defineNeighbours(self, maxNeighbours):
         """
@@ -288,8 +430,8 @@ class Node():
         
         # suche in der List nach zufaelligen Nachbarn-Ids
         while counter < maxNeighbours:
-            neighbourId = "".join(random.choice(list(self.__config.keys())));            
-            self.__LOGGER.debug(self.__ident + "random neighbor id: " + neighbourId);
+            neighbourId = "".join(random.choice(list(self.__node_infos.keys())));            
+            self._LOGGER.debug(self.__ident + "random neighbor id: " + neighbourId);
             
             # Nachbar-Id muessen untereinander unterschiedlich sein, sowie ungleich eigner ID
             # Konvertierung zum String, damit der Vergleich korrekt funktioniert!
@@ -301,22 +443,22 @@ class Node():
     
     def __setNodeType(self):
         '''
-        Set node type.
+        Set and initialized the node type.
         
         candidate node - if node id is in candidate list
         voter node - if node id is not in candidate list       
         '''
         
-        if int(self.__id) in self.__pref.getCandidateList():
+        # node is a candidate
+        if int(self.__id) in self._pref.getCandidateList():
             self.__nodeType = NodeType.CANDIDATE
+        # node is a voter
         else:
             self.__nodeType = NodeType.VOTER
+            self.__initVoter()
     
     
-    def __initVoter(self):
+    
         
-        # candidate is my neighbor
-        pass 
     
-    def __initCandidate(self):
-        pass
+    

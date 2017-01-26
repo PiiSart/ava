@@ -10,9 +10,12 @@ Start all nodes as a child process.
 import multiprocessing as mp
 from logger.logger import NodeLogger
 from node.node import Node
+from node.voter_node import Voter
+from node.candidate_node import Candidate
 from node.node_submitter import Submitter
 from util.settings import Settings
 from aptdaemon.utils import deprecated
+from node.candidate_node import Candidate
 
 
 
@@ -54,10 +57,21 @@ def __startNodes():
     Start nodes as a child process
     '''
     __LOGGER.info(__IDENT + " start nodes ...")
-    for i in range(0, len(__NODES)):
-        node = Node(str(i))
-        process_list.append(mp.Process(target=node.start))#, args=(str(i), )))
-        process_list[i].start()
+    
+    if __pref.getElection() == False:
+        for i in range(0, len(__NODES)):
+            node = Node(str(i))
+            process_list.append(mp.Process(target=node.start))#, args=(str(i), )))
+            process_list[i].start()
+    else:
+        for i in range(0, len(__NODES)):
+            if i in __pref.getCandidateList():
+                node = Candidate(str(i))
+            else:
+                node = Voter(str(i))
+                
+            process_list.append(mp.Process(target=node.start))#, args=(str(i), )))
+            process_list[i].start()
   
 if __name__ == '__main__':
     __pref = Settings()

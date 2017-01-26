@@ -5,3 +5,7 @@
 # ignore binarys
 *.pyc
 __pycache__/
+
+# ignore jpeg files
+*.jpg
+*.jpeg

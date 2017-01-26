@@ -5,6 +5,11 @@
 # 1 - manager and node_starter loads graphviz file graphviz.txt
 GRAPHVIZ 1
 
+# Use voter/candidate nodes
+# 1 - election is on. Node-starter start voter and candidate nodes! 
+# 0 - election is off. Node-starter start normal nodes!
+ELECTION 0
+
 # path to graphviz file
 GRAPHVIZ_FILE ../../conf/graphviz.txt
 
@@ -12,15 +17,15 @@ GRAPHVIZ_FILE ../../conf/graphviz.txt
 NODE_FILE ../../conf/node_list.txt
 
 # number of neighbors per node (if GRAPHVIZ is 0)
-MAX_NEIGHBORS 3
+MAX_NEIGHBORS 2
 
 # total number of nodes
-NODES 3
+NODES 10
 
 # number of edges
-EDGES 3
+EDGES 11
 
-# number of nodes until the node trust them whisper (in U2 number of responses until candidate start new call)
+# number of nodes until the node trust them whisper (in U2 number of responses until candidate start new voting)
 TRUST 1
 
 # ZMQ options
@@ -31,5 +36,5 @@ LINGER_TIME 2000
 RCVTIMEO_TIME 2000
 
 # candidate nodes (value: node id)
-CANDIDATE 5
-CANDIDATE 1
+CANDIDATE 9
+CANDIDATE 0

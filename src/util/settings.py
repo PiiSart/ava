@@ -39,7 +39,8 @@ class Settings(object):
             "EDGES" : self.__setNumberOfEdges,
             "LINGER_TIME" : self.__setLingerTime,
             "RCVTIMEO_TIME" : self.__setRcvtimeoTime,
-            "CANDIDATE" : self.__addCandidate          
+            "CANDIDATE" : self.__addCandidate,
+            "ELECTION"  : self.__setElection       
         }
         self.__TRUST = 0
         self.__NUMBER_OF_NODES = 0
@@ -47,6 +48,7 @@ class Settings(object):
         self.__LINGER_TIME = -1
         self.__RCVTIMEO_TIME = -1
         self.__CANDIDATE = []
+        self.__ELECTION = 0
                
         
     def loadSettings(self):
@@ -156,7 +158,21 @@ class Settings(object):
     def __addCandidate(self, value):
         self.__CANDIDATE.append(value)
     
+    def __setElection(self, value):
+        self.__ELECTION = int(value)
+    
+    def getElection(self):
+        if self.__ELECTION == 0:
+            return False
+        return True
+    
     def getCandidateList(self):
+        '''
+        Return a candidate list with two candidates.
+        
+        @return: candidate list
+        @type self.__CANDIDATE: list[string] list size 2
+        '''
         return self.__CANDIDATE
                  
     def __readNodeInfosGraphviz(self):    
