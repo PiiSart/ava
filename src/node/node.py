@@ -15,7 +15,6 @@ from .node_submitter import Submitter
 from logger.logger import NodeLogger
 from util.settings import Settings
 from node.node_message import Message, MsgType
-from node.node_type import NodeType
 from abc import abstractmethod
 
 
@@ -39,6 +38,7 @@ class Node():
         
         self._LOGGER = NodeLogger().getLoggerInstance(NodeLogger.NODE) 
         self.__ident = ("Node-ID-" + str(node_id) + " [PID:" + str(os.getpid()) + "] -> ")
+        self._LOGGER.debug(node_id + " My PID is: " + str(os.getpid()))
         self._pref = Settings()
         self._pref.loadSettings()
         self.__rumor_count = 0
@@ -51,10 +51,7 @@ class Node():
         # echo algorithm
         self.__echo_counts = {} # {"cand_id": <integer>, ...}
         self.__first_link = {}  # {"cand_id": <node_id as a string>, ...}
-        #self.__explorer = {}    # {"cand_id": <boolean>, ...}
-        #self.__ready = {}       # {"cand_id": <boolean>, ...}
-        
-                   
+                           
         # apply node data
         self._LOGGER.debug(self.__ident + "save id: " + node_id);           
         self.__id = node_id;
@@ -80,19 +77,12 @@ class Node():
             
         self._LOGGER.debug(self.__ident + "selected neighbors: " + str(self.__neighbours));
         
-        # who i am? candidate/voter
-        if self.__id in self._pref.getCandidateList():
-            # i am candidate
-            pass
-        else:
-            # i am voter
-            pass
-        
-        self.__receiver = Receiver(self) 
-        #self.__start()              
+        if self._pref.getElection() == False:        
+            self.__receiver = Receiver(self) 
+            self.__start()              
                         
                
-    def start(self):
+    def __start(self):
         '''
         Start node receiver in a thread.
         '''
@@ -101,9 +91,8 @@ class Node():
         receiver_t.start() 
         # send own ID on all neighbours
         self.notifyNeighbours("my id is " + self.__id)
-               
+          
         receiver_t.join()
-    
    
     def __del__(self):
         """
@@ -124,7 +113,7 @@ class Node():
     def getIP(self):
         return self.__ip; 
     
-    def getExplorerState(self, cand_id):
+    def isExplorerExist(self, cand_id):
         '''
         Get state of the explorer.
         True: node has the explorer message already received
@@ -140,18 +129,7 @@ class Node():
             return True
         else:
             return False
-    
-    #def setExplorerState(self, cand_id, state):
-        '''
-        Set the explorer state.
-                
-        @param state: explorer state
-        @type state: boolean
-        @param cand_id: candidate id from the candidate who initiate a campaign
-        @type cand_id: string
-        '''
-    #    self.__explorer[cand_id] = state
-    
+        
     def getFirstLinkId(self, cand_id):
         '''
         Get a first link (is a node id of which the node get a first explorer message) 
@@ -163,6 +141,7 @@ class Node():
         @return: first link id or None if the candidate is not in the dictionary
         @type __first_link_id[cand_id]: string or None
         '''
+        print("%s FIRS LINKs: %s" % (self.getIdent(), self.__first_link))
         if cand_id in self.__first_link:
             return self.__first_link[cand_id]
         else:
@@ -180,7 +159,7 @@ class Node():
         '''
         self.__first_link[cand_id] = f_link
         
-    def deleteFirstLinkId(self, cand_id):
+    def delFirstLinkId(self, cand_id):
         '''
         Delete first link id.
         
@@ -189,64 +168,44 @@ class Node():
         '''
         if cand_id in self.__first_link:
             self.__first_link.pop(cand_id)
-        
-    def getReadyState(self, cand_id):
-        '''
-        Get a state of echo algorithm related to candidate.
-        
-        @param cand_id: candidate id from the candidate who initiate a campaign
-        @type cand_id: string
-        
-        @return: state of campaign. True if the campaign is over or not exists and False if the campaign is still run. 
-        @type __ready[cand_id]: boolean
-        '''
-        if cand_id in self.__ready:
-            return False#return self.__ready[cand_id]
-        else: # if cand_id not in the first link, than campaign doesn't exist
-            return True
-    
-    #def setReadyState(self, cand_id, ready_state):
-        '''
-        Set a state of echo algorithm related to candidate.
-        
-        @param cand_id: candidate id from the candidate who initiate a campaign
-        @type cand_id: string
-        @param ready: state of echo algorithm
-        @type ready: boolean
-        '''
-    #    self.__ready[cand_id] = ready_state
-    
-    #def getEchoCounts(self, cand_id):
-        '''
-        Get a number of received echo's related to candidate.
-        
-        @param cand_id: candidate id from the candidate who initiate a campaign
-        @type cand_id: string
-        
-        @return: number echo's or None if the cand_id not in the dictionary
-        @type __echo_counts[cand_id]: integer
-        '''
-    #    if cand_id in self.__echo_counts:
-    #        return self.__echo_counts[cand_id]
-    #    else:
-    #        return None
-    
+
     def incEchoCounter(self, cand_id):
         '''
         Increase a number of received echo's related to candidate.
-        If the echo counter equals to number of neighbors, ready state will be set
-        of True.
         
         @param cand_id: candidate id from the candidate who initiate a campaign
         @type cand_id: string
         '''      
         if cand_id in self.__echo_counts:
             self.__echo_counts[cand_id] += 1
-            if self.__echo_counts[cand_id] == len(self.getNeighbors()):
-                self.setReadyState(cand_id, True)
         else:
             self.__echo_counts[cand_id] = 1
             
+    def decEchoCounter(self, cand_id):
+        '''
+        Decrease a number of received echo's related to candidate.
+        
+        @param cand_id: candidate id from the candidate who initiate a campaign
+        @type cand_id: string
+        '''      
+        if cand_id in self.__echo_counts:
+            self.__echo_counts[cand_id] -= 1
+    
+    def getEchoCounter(self, cand_id):
+        if cand_id in self.__echo_counts:
+            return self.__echo_counts[cand_id]
+        else:
+            return 0      
+    
+    def delEchoCounter(self, cand_id):
+        '''
+        Delet echo counter from candidate with cand_id.
+        
+        @param cand_id: candidate id from the candidate who initiate a campaign
+        @type cand_id: string
+        '''
+        if cand_id in self.__echo_counts:
+            self.__echo_counts.pop(cand_id)
     
     def resetEchoCounter(self, cand_id):
         '''
@@ -285,14 +244,14 @@ class Node():
         '''
         return self.__vector_time      
     
-    def getEchoCounter(self):
+    def getEchoCounts(self):
         '''
         Return number of echo's
         
         @return: number of received echo's
-        @type self.__echo_counter: integer
+        @type self.__echo_counts: dictionary {"cand_id": <integer>, ...}
         '''
-        return self.__echo_counter
+        return self.__echo_counts
                     
     def incRumorCount(self):
         '''
@@ -386,12 +345,22 @@ class Node():
     
     
     @abstractmethod
-    def echo(self, msg = None):
+    def echo(self, msg):
         '''
         Handle echo messages.
         '''
         pass
     
+    @abstractmethod
+    def explorer(self, msg=None):
+        '''
+        Handle explorer messages.
+        '''
+        pass  
+    
+    @abstractmethod
+    def getNodeType(self):
+        pass
        
     # private methods
        
@@ -439,23 +408,7 @@ class Node():
                 neighbourList.append(neighbourId);
                 counter += 1;
                 
-        return neighbourList;
-    
-    def __setNodeType(self):
-        '''
-        Set and initialized the node type.
-        
-        candidate node - if node id is in candidate list
-        voter node - if node id is not in candidate list       
-        '''
-        
-        # node is a candidate
-        if int(self.__id) in self._pref.getCandidateList():
-            self.__nodeType = NodeType.CANDIDATE
-        # node is a voter
-        else:
-            self.__nodeType = NodeType.VOTER
-            self.__initVoter()
+        return neighbourList;    
     
     
     

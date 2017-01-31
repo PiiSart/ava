@@ -3,22 +3,6 @@
 Created on 20.12.2016
 Message protocol (JSON)
 
-{
-    header: {
-        timestamp: <time string>,
-        vector_time: <list>
-        subm_id: <node id string>,
-        subm_ip: <node ip string>,
-        subm_port: <node port string>,
-        recv_id: <node id string>,
-        recv_ip: <node ip string>,
-        recv_port: <node port string>,
-    }
-    data: {
-        message: <message string>
-    }
-}
-
 
 {
     header: {
@@ -118,8 +102,18 @@ class Message(object):
         __msg_obj = json.loads(json_str)
         self.__header = __msg_obj[MsgParts.HEADER]
         self.__data = __msg_obj[MsgParts.DATA]
+        self.__candidate = __msg_obj[MsgParts.HEADER][MsgParts.CAND]
+        self.__submitter = __msg_obj[MsgParts.HEADER][MsgParts.SUBM]
+        self.__receiver = __msg_obj[MsgParts.HEADER][MsgParts.RECV]
     
-    def __repr__(self):
+    #def __repr__(self):
+    #    str_buf = (" " + self.getMsg() + " | [MSG_TYPE]: " + self.getMsgType() +
+    #               " [TIMESTAMP]: " + self.getTimestamp() + 
+    #               " [VECTOR_TIME]: " + str(self.getVectorTime())) 
+                    
+    #    return str_buf
+    
+    def __str__(self):
         str_buf = (" " + self.getMsg() + " | [MSG_TYPE]: " + self.getMsgType() +
                    " [TIMESTAMP]: " + self.getTimestamp() + 
                    " [VECTOR_TIME]: " + str(self.getVectorTime())) 
@@ -171,7 +165,8 @@ class Message(object):
         return self.__header[MsgParts.RECV][MsgParts.RECV_PORT]
     
     def getCandId(self):
-        return self.__header[MsgParts.CAND][MsgParts.CAND_ID]
+        tmp = self.__header[MsgParts.CAND][MsgParts.CAND_ID]
+        return tmp#self.__header[MsgParts.CAND][MsgParts.CAND_ID]
     
     def getCandIp(self):
         return self.__header[MsgParts.CAND][MsgParts.CAND_IP]
@@ -231,6 +226,7 @@ class MsgType:
     VOTE_FOR_ME = "cm_vote_for_me"
     CAMPAIGN = "cm_campaign"
     MESSAGE = "cm_message"
-    ECHO_EXPLORER = "cm_echo_ex"
-    ECHO_ECHO = "cm_echo_ec"
-    START_VOTING = "cm_start_voting"
+    ECHO_EXPLORER = "cm_exploer"
+    ECHO_ECHO = "cm_echo"
+    START_VOTE_FOR_ME = "cm_start_vote_for_me"
+    START_CAMPAIGN = "cm_start_campaign"

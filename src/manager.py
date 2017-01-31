@@ -10,13 +10,13 @@ Manager. Can communicate with nodes.
 
 from node.node_submitter import Submitter
 from logger.logger import NodeLogger
-from node.node_message import MsgType, MsgParts, Message
+from node.node_message import MsgType, Message
 from util.settings import Settings
 import zmq
 from zmq.backend.cython.constants import PULL, RCVTIMEO
 from timeit import default_timer as timer
-from datetime import datetime
 from zmq.backend.cython.constants import LINGER, PUSH
+from node_starter import __IDENT
 
 IDENT = "Manager--> "
 __FILE_ACCESS_MODE = "r"
@@ -25,32 +25,6 @@ __LOGGER = NodeLogger().getLoggerInstance(NodeLogger.MANAGER)
 __IP = "127.0.0.1"
 __PORT = "10000"
 
-
-class ManMessage(Message):
-    '''
-    Manager Message
-    '''
-    def __init__(self):
-        super().__init__()
-        
-    def init(self, vector_time, subm_id, subm_ip, subm_prot, recv_id, recv_ip, recv_port, msg_type, message):
-        '''
-        Init message components
-        '''
-        # create header
-        self.getHeader()[MsgParts.TIME_STAMP] = self.__time_stamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S:%f')[:-3]
-        self.getHeader()[MsgParts.VECTOR_TIME] = vector_time
-        self.getHeader()[MsgParts.MSG_TYPE] = msg_type        
-        self.getHeader()[MsgParts.SUBM_ID] = subm_id
-        self.getHeader()[MsgParts.SUBM_IP] = subm_ip
-        self.getHeader()[MsgParts.SUBM_PORT] = subm_prot
-        self.getHeader()[MsgParts.RECV_ID] = recv_id
-        self.getHeader()[MsgParts.RECV_IP] = recv_ip
-        self.getHeader()[MsgParts.RECV_PORT] = recv_port
-        
-        # create data
-        self.getData()[str(MsgParts.MSG)] = message
-        
         
 class ManSubmitter(Submitter):
     def __init_(self):
@@ -94,6 +68,31 @@ class ManSubmitter(Submitter):
         __socket.close()
         __context.destroy()
         
+    def send_m(self, message):
+        # create ZMQ context
+        __context = zmq.Context()
+        # set max time for send a message
+        __context.setsockopt(LINGER, int(pref.getLingerTime()))#node_message.LINGER_TIME)
+        # set max time for receive a response
+        #__context.setsockopt(RCVTIMEO, node_message.RCVTIMEO_TIME)
+        # create ZMQ_PUSH Socket        
+        __socket = __context.socket(PUSH)
+        #self.__context.setsockopt(LINGER, 0)        
+        #self.__LOGGER.debug(subm_id + " connect to: ip - " + str(recv_ip) + " port - " + str(recv_port))
+        #self.__LOGGER.debug(Node.getIdent() + " connect to: ip - " + message.getRecvIp() + " port - " + message.getRecvPort())
+        # connect socket to ip and port        
+        __socket.connect("tcp://" + message.getRecvIp() + ":" + message.getRecvPort())
+        #self.__LOGGER.info(subm_id + " send message an [" + recv_id + "]: " + message)  
+              
+        # send message        
+        #Node.incLocalTime()
+        #message.setVectorTime(Node.getVectorTime())
+        #self.__LOGGER.info(self.__getLogString(Node, message))
+                           
+        __socket.send_string(message.toJson())
+        __socket.close()
+        __context.destroy()
+        
     def __getLogString(self, msg):
         recv_id = msg.getRecvId()
         global IDENT
@@ -102,14 +101,16 @@ class ManSubmitter(Submitter):
 
 def __print_menue():
     print("*******************************")
-    print("* 1: Print all avalable Nodes *")
-    print("* 2: Shutdown node            *")
-    print("* 3: Shutdown all nodes       *")
-    print("* 4: Send message             *")
-    print("* 5: Tell rumor               *")
-    print("* 7: Statistic                *")
-    print("* 8: Get whisper state        *")
-    print("* 0: Exit manager             *")
+    print("* 1 : Print all avalable Nodes *")
+    print("* 2 : Shutdown node            *")
+    print("* 3 : Shutdown all nodes       *")
+    print("* 4 : Send message             *")
+    print("* 5 : Tell rumor               *")
+    print("* 7 : Statistic                *")
+    print("* 8 : Get rumor state          *")
+    print("* 9 : Start vote for me        *")
+    print("* 10: Start campaign          *")
+    print("* 0 : Exit manager             *")
     print("*******************************")
     
 def __readNodeInfos(fileName):    
@@ -163,15 +164,17 @@ def __shutdownNode():
         except KeyError:
             __LOGGER.info(IDENT + "node [" + node_id + "] not exist!")
         
-def __send(node_id, msg_type, msg):
+def __send(node_id, msg_type, msg=""):
     '''
     Send a message to a node
     '''
 
     # check node id
     if node_id in __NODES.keys():
-        msg_buf = ManMessage()
-        msg_buf.init(vector_time, IDENT, __IP, __PORT, node_id, __NODES[node_id]["ip"], __NODES[node_id]["port"], msg_type, msg)
+        msg_buf = Message()
+        msg_buf.setSubm(IDENT, __IP, __PORT)
+        msg_buf.setRecv(node_id, __NODES[node_id]["ip"], __NODES[node_id]["port"])
+        msg_buf.create(vector_time, msg_type, msg)        
         t0 = timer()
         ManSubmitter().send_message(vector_time, msg_buf)
         t1 = timer()
@@ -265,8 +268,26 @@ def __initVectorTime():
     vector = []
     for i in range(0, int(pref.getNumberOfNodes())):
         vector.append(i - i) # init with zero
-    return vector    
+    return vector  
+
+def __startVoteForMe():    
+    cand_list = pref.getCandidateList()
+    print("Avalable candidates: %s" % (str(cand_list)))
+    cand_id = input("Which candidate:")
+    if cand_id in cand_list:
+        __send(cand_id, MsgType.VOTE_FOR_ME)
+    else:
+        print("[%s] is not a candidate!" % (cand_id))
    
+def __startCampaign():
+    cand_list = pref.getCandidateList()
+    print("Avalable candidates: %s" % (str(cand_list)))
+    cand_id = input("Which candidate:")
+    if cand_id in cand_list:
+        __send(cand_id, MsgType.START_CAMPAIGN)
+    else:
+        print("[%s] is not a candidate!" % (cand_id))
+
 options = {
         1 : __printAllNodes,
         2 : __shutdownNode,
@@ -275,6 +296,8 @@ options = {
         5 : __tellRumor,
         7 : __getStatistic,
         8 : __getWhisperState,
+        9 : __startVoteForMe,
+        10: __startCampaign,
     }
 
 

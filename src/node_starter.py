@@ -12,10 +12,7 @@ from logger.logger import NodeLogger
 from node.node import Node
 from node.voter_node import Voter
 from node.candidate_node import Candidate
-from node.node_submitter import Submitter
 from util.settings import Settings
-from aptdaemon.utils import deprecated
-from node.candidate_node import Candidate
 
 
 
@@ -56,21 +53,20 @@ def __startNodes():
     '''
     Start nodes as a child process
     '''
-    __LOGGER.info(__IDENT + " start nodes ...")
-    
     if __pref.getElection() == False:
+        __LOGGER.info(__IDENT + " start normal nodes ...")
         for i in range(0, len(__NODES)):
-            node = Node(str(i))
-            process_list.append(mp.Process(target=node.start))#, args=(str(i), )))
+            #node = Node(str(i))
+            process_list.append(mp.Process(target=Node, args=(str(i), )))
             process_list[i].start()
     else:
+        __LOGGER.info(__IDENT + " start voter/candidate nodes ...")
         for i in range(0, len(__NODES)):
-            if i in __pref.getCandidateList():
-                node = Candidate(str(i))
+            if str(i) in __pref.getCandidateList():
+                process_list.append(mp.Process(target=Candidate, args=(str(i), )))
             else:
-                node = Voter(str(i))
-                
-            process_list.append(mp.Process(target=node.start))#, args=(str(i), )))
+                process_list.append(mp.Process(target=Voter, args=(str(i), )))
+                         
             process_list[i].start()
   
 if __name__ == '__main__':

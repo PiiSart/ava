@@ -38,7 +38,8 @@ class Receiver(object):
             MsgType.MESSAGE : self.__messageHandler,
             MsgType.RUMOR : self.__rumorHandler,
             MsgType.RUMOR_STATE : self.__rumorStateHandler,
-            MsgType.START_VOTING : self.__startVotingHandler,
+            MsgType.START_VOTE_FOR_ME : self.__startVoteForMeHandler,
+            MsgType.START_CAMPAIGN : self.__startCampaignHandler,
             MsgType.KEEP_IT_UP : self.__keepItUpHandler,
             MsgType.I_DONT_CHOOSE_YOU : self.__iDontChooseYouHandler,
             MsgType.VOTE_FOR_ME : self.__voteForMeHandler,
@@ -62,26 +63,29 @@ class Receiver(object):
         self.__socket = self.__context.socket(PULL)
         # bind socket to ip and port
         self.__socket.bind("tcp://" + str(ip) + ":" + str(port))
+        #self.__socket.connect("tcp://" + str(ip) + ":" + str(port))
         
         self.__LOGGER.debug(self.__node.getIdent() + "receiver is started: ip - " + str(ip) + " - port - " + str(port) + "\n")
         
+                
         while self.__quit == False:
             # receive message
             msg_str = self.__socket.recv_string()
             
             # create message obj
-            self.__msg = Message()
+            msg = Message()
             # import values from json string
-            self.__msg.toMessage(msg_str)
+            msg.toMessage(msg_str)
             # update vector time
-            self.__msg.setVectorTime(self.__node.setVectorTimeByReceive(self.__msg.getVectorTime()))
+            msg.setVectorTime(self.__node.setVectorTimeByReceive(msg.getVectorTime()))
             # print message to STDOUT
-            self.__LOGGER.info(self.__getLogString(self.__msg))
+            self.__LOGGER.info(self.__getLogString(msg))
             # handle message
-            try:                       
-                self.__receiverHandler(self.__msg)
-            except KeyError:
-                self.__LOGGER.error(self.__node.getIdent() + " unknown message type [" + self.__msg.getMsgType() + "]")
+            #try:                       
+            self.__receiverHandler(msg)
+            #ecept KeyError as e:
+            #   self.__LOGGER.error(self.__node.getIdent() + " unknown message type [" + str(e) + "]")
+                
                     
         self.__LOGGER.debug(self.__node.getIdent() + "shutdown receiver: ip - " + str(ip) + " port - " + str(port) + " ...")
         self.__clear()        
@@ -115,6 +119,7 @@ class Receiver(object):
         @type msg: NodeMessage
         '''   
         # call handler based on MsgType
+        #print(msg.getMsgType())
         handler = self.__MSG_HANDLER[msg.getMsgType()]
         handler(msg)
     
@@ -146,7 +151,7 @@ class Receiver(object):
         @type msg: NodeMessage
         '''
         if  self.__knowRumor == False:
-            self.__LOGGER.debug(self.__node.getIdent() + " im not know rumor!")
+            self.__LOGGER.debug(self.__node.getIdent() + " i'm not know rumor!")
             self.__knowRumor = True
             self.__node.incRumorCount()
             self.__node.tellRumorToNeighbors(msg)
@@ -164,16 +169,33 @@ class Receiver(object):
         '''
         self.__node.getRumorState(msg)
     
-    def __startVotingHandler(self, msg):
+    def __startVoteForMeHandler(self, msg):
         '''
-        Handle MsgType.CAMPAIGN <CANDIDATE>
+        Handle MsgType.START_VOTE_FOR_ME <CANDIDATE>
+        Initiate a vote for me message
         
         @param msg: received message
         @type msg: NodeMessage
         '''
+        self.__LOGGER.debug(self.__node.getID() + " NodeType: " + self.__node.getNodeType() + str(msg))
         # only candidate can start voting
         if self.__node.getNodeType() == NodeType.CANDIDATE:
-            self.__node.startVoting()
+            self.__LOGGER.info(self.__node.getID() + " i start voting!" +  str(msg))
+            self.__node.startVoting(0)
+            
+    def __startCampaignHandler(self, msg):
+        '''
+        Handle MsgType.START_CAMPAIGN <CANDIDATE>
+        Initiate a campaign message.
+        
+        @param msg: received message
+        @type msg: NodeMessage
+        '''
+        self.__LOGGER.debug(self.__node.getID() + " NodeType: " + self.__node.getNodeType() + str(msg))
+        # only candidate can start voting
+        if self.__node.getNodeType() == NodeType.CANDIDATE:
+            self.__LOGGER.info(self.__node.getID() + " i start voting!" +  str(msg))
+            self.__node.startVoting(1)
        
     def __keepItUpHandler(self, msg):
         '''
@@ -206,15 +228,17 @@ class Receiver(object):
         
         # message only for voter's
         if self.__node.getNodeType() == NodeType.CANDIDATE:
+            self.__LOGGER.info("%s I am candidate too! I don't vote! <cand_id:%s>" %(self.__node.getIdent(), msg.getCandId()))
             return
         
         msg_buf = Message()
         msg_buf.setSubm(self.__node.getID(), self.__node.getIP(), self.__node.getPort(), self.__node.getCLevels())
         msg_buf.setRecv(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
+        msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
         
         if self.__node.incCLevelVoteForMe(msg) == True:
             # notify neighbors
-            self.__node.notifyNeighbours(msg)
+            self.__node.sendVoteForMeOnNeighbors(msg)#self.__node.notifyNeighbours(msg)
             # msg on candidate 
             msg_buf.create(self.__node.getVectorTime(), MsgType.KEEP_IT_UP, "i am support you!")
         else:
@@ -239,14 +263,12 @@ class Receiver(object):
             return
         
         # start campaign
-        if self.__node.getCampaignState() == True:
-            self.__node.startVoting(1)
-        else:
-            self.__LOGGER.info(self.__node.getIdent() + " can not start new campaign, while another campaign is running!" + str(msg))
+        self.__node.startVoting(1)
+        
             
     def __explorerHandler(self, msg):
         '''
-        Handle MsgType.ECHO_EXPLORER. <VOTER>
+        Handle MsgType.ECHO_EXPLORER. <VOTER + CANDIDATE>
                
         @param msg: received message
         @type msg: node.Message
@@ -260,7 +282,7 @@ class Receiver(object):
         @param msg: received message
         @type msg: node.Message
         '''
-        self.__node.echo()
+        self.__node.echo(msg)
     
     
     
