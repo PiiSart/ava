@@ -141,7 +141,7 @@ class Node():
         @return: first link id or None if the candidate is not in the dictionary
         @type __first_link_id[cand_id]: string or None
         '''
-        print("%s FIRS LINKs: %s" % (self.getIdent(), self.__first_link))
+        #print("%s FIRS LINKs: %s" % (self.getIdent(), self.__first_link))
         if cand_id in self.__first_link:
             return self.__first_link[cand_id]
         else:

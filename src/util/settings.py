@@ -40,7 +40,8 @@ class Settings(object):
             "LINGER_TIME" : self.__setLingerTime,
             "RCVTIMEO_TIME" : self.__setRcvtimeoTime,
             "CANDIDATE" : self.__addCandidate,
-            "ELECTION"  : self.__setElection       
+            "ELECTION"  : self.__setElection,
+            "VEC_TIME_TERMINATION" : self.__setVecTimeTermination,       
         }
         self.__TRUST = 0
         self.__NUMBER_OF_NODES = 0
@@ -49,6 +50,7 @@ class Settings(object):
         self.__RCVTIMEO_TIME = -1
         self.__CANDIDATE = []
         self.__ELECTION = 0
+        self.__VEC_TIME_TERMINATION = 0
                
         
     def loadSettings(self):
@@ -165,6 +167,12 @@ class Settings(object):
         if self.__ELECTION == 0:
             return False
         return True
+    
+    def __setVecTimeTermination(self, value):
+        self.__VEC_TIME_TERMINATION = value
+        
+    def getVecTimeTermination(self):
+        return self.__VEC_TIME_TERMINATION
     
     def getCandidateList(self):
         '''

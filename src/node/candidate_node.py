@@ -186,18 +186,8 @@ class Candidate(Node):
             self._LOGGER.info("%s ***************************", self.getIdent())
             # notify neighbors
             for neighbor in self.getNeighbors():
-                self.__sendExplorer(neighbor, " i am super, support my campaign!")
-                '''
-                msg = Message()
-                msg.setSubm(self.getID(), self.getIP(), self.getPort())
-                msg.setRecv(n, self.getNodeInfos()[n]["ip"], self.getNodeInfos()[n]["port"])
-                msg.setCand(self.getID(), self.getIP(), self.getPort())               
-                msg.create(self.getVectorTime(), MsgType.ECHO_EXPLORER, " i am super, support my campaign!")
-                Submitter().send_message(self, msg)
-                # increase echo counter
-                self.incEchoCounter(self.getID())
-                '''
-        else:
+                self.__sendExplorer(neighbor, " i am super, support my campaign!")                
+        elif choose == 1: # dirty !!! must be change!
             self._LOGGER.info("%s can't start new campaign, while another campaign is running!")
         
     def explorer(self, msg):
@@ -208,95 +198,57 @@ class Candidate(Node):
         
         # explorer from foreign candidate
         if self.getID() != cand_id:
-            pass
+            # check i'm leaf
+            if len(self.getNeighbors()) == 1:
+                # send echo on submitter
+                self.__sendEcho(msg, msg.getSubmId())        
+            # check first link
+            elif self.getFirstLinkId(cand_id) == None:
+                # fist link doesn't exist
+                self.setFirstLinkId(cand_id, msg.getSubmId())
+                # send explorer on all neighbors except fist link
+                for neighbor in self.getNeighbors():
+                    if neighbor != msg.getSubmId():
+                        self.__sendExplorer(neighbor, msg, False, msg.getMsg())
+            # first link already exist
+            else: # explorer already received
+                # increase echo counter and check ready state
+                self.echo(msg)
+                
         # explorer is mine
         else:
-            self.__sendEcho(msg, msg.getSubmId())
+            self.echo(msg)
         
-        '''
-        # explorer exist, echo on submitter
-        if self.getFirstLinkId(cand_id) != None:
-            msg_buf = Message()
-            msg_buf.setSubm(self.getID(), self.getIP(), self.getPort())
-            msg_buf.setRecv(msg.getSubmId(), msg.getSubmIp(), msg.getSubmPort())
-            msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-            msg_buf.create(self.getVectorTime(), MsgType.ECHO_ECHO)
-            Submitter().send_message(self, msg_buf)   
-        else: # explorer doesn't exist
-            # set first link
-            self.setFirstLinkId(cand_id, msg.getSubmId())          
-            # notify neighbors
-            neighbors = self.getNeighbors()
-            node_infos = self._pref.getNodeInfos()
-            
-            # check if node is a leaf, if yes, than send echo on first link
-            if len(neighbors) - 1 == 0:
-                msg_buf = Message()
-                msg_buf.setSubm(self.getID(), self.getIP(), self.getPort())
-                msg_buf.setRecv(msg.getSubmId(), msg.getSubmIp(), msg.getSubmPort())
-                msg_buf.setCand(self.getID(), self.getIP(), self.getPort())
-                msg_buf.create(self.getVectorTime(), MsgType.ECHO_ECHO)
-                Submitter().send_message(self, msg_buf)
-            else:    
-                # send explorer on neighbors except first link            
-                for n_id in neighbors:
-                    if str(n_id) != str(self.getFirstLinkId(cand_id)):
-                        msg_buf = Message()
-                        msg_buf.setSubm(self.getID(), self.getIP(), self.getPort())
-                        msg_buf.setRecv(node_infos[n_id]["id"], node_infos[n_id]["ip"], node_infos[n_id]["port"])                
-                        msg_buf.setCand(self.getID(), self.getIP(), self.getPort())
-                        msg_buf.create(self.getVectorTime(), MsgType.ECHO_EXPLORER)                
-                        Submitter().send_message(self, msg_buf)
-        '''
-            
+                    
     def echo(self, msg):
         '''
         Increase the echo counter and check whether the campaign is over. Notify
         submitter.
-        '''        
+        '''
         cand_id = msg.getCandId()
-        
-        # explorer from foreign candidate
-        if self.getID() != cand_id:
-            pass
-        # explorer is mine
-        else:
-            # increase my echo counter
-            self.incEchoCounter(cand_id)
-            # check if ready
-            number_of_neighbors = len(self.getNeighbors())
-            if  number_of_neighbors == self.getEchoCounter(cand_id):
-                # campaign is ends
-                print("%s ECHO: anzahl echos: %s Kandidat: %s VON: %s" %(self.getIdent(), self.getEchoCounter(cand_id), cand_id, msg.getSubmId()))
-                self._LOGGER.info("%s my campaign is over! Try to notify observer!" % (self.getIdent()))
-                # delete counter
-                self.delEchoCounter(cand_id)
-                # stop campaign
-                self.__is_campaign_run = False
-            
-        '''   
+        # increase echo counter for candidate
         self.incEchoCounter(cand_id)
-        print("%s ECHO: anzahl echos: %s Kandidat: %s VON: %s" %(self.getIdent(), self.getEchoCounter(cand_id), cand_id, msg.getSubmId()))
-        # received echo from all neighbors
-        if cand_id != self.getID() and self.getEchoCounter(cand_id) == len(self.getNeighbors() - 1):
-            print("%s ECHO: anzahl echos: %s Kandidat: %s VON: %s" %(self.getIdent(), self.getEchoCounter(cand_id), cand_id, msg.getSubmId()))            
-            # notify first link
-            msg_buf = Message()
-            msg_buf.setSubm(self.getID(), self.getIP(), self.getPort())
-            first_link = self.getFirstLinkId(cand_id)
-            node_infos = self._pref.getNodeInfos()
-            msg_buf.setRecv(node_infos[first_link]["id"], node_infos[first_link]["ip"], node_infos[first_link]["port"])
-            msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-            msg_buf.create(self.getVectorTime(), MsgType.ECHO_ECHO)
-            Submitter().send_message(self, msg_buf)
-            
-            # reset echo counter
-            self.resetEchoCounter(cand_id)
-            # delete first link
-            self.deleteFirstLinkId(cand_id)
-        # campaign ends
-        if cand_id == str(self.getID()) and self.getEchoCounter(cand_id) == len(self.getNeighbors()):
-            print("%s ECHO: anzahl echos: %s Kandidat: %s VON: %s" %(self.getIdent(), self.getEchoCounter(cand_id), cand_id, msg.getSubmId()))
-            self._LOGGER.info("%s my campaign is over! Try to notify observer!" % (self.getIdent()))
-            self.__is_campaign_run = False
-        '''   
+        # number of neighbors
+        number_of_neighbors = len(self.getNeighbors()) 
+        # echo or explorer from foreign candidate
+        if cand_id != self.getID():
+            # all echos from neighbors received (except first link)
+            if self.getEchoCounter(cand_id) == number_of_neighbors - 1:
+                # send echo on first link
+                self.__sendEcho(msg, self.getFirstLinkId(cand_id))                              
+                # delete first link
+                self.delFirstLinkId(cand_id)
+                # delete echo counter
+                self.delEchoCounter(cand_id)
+        else:
+            # all echos from neighbors received (except first link)
+            if self.getEchoCounter(cand_id) == number_of_neighbors:                
+                # send echo on observer
+                #self.__sendEcho(msg, self.getFirstLinkId(cand_id)) # TODO: implement observer                              
+                # delete first link
+                self.delFirstLinkId(cand_id)
+                # delete echo counter
+                self.delEchoCounter(cand_id)
+                self._LOGGER.info("%s my campaign is over! Try to notify observer!" % (self.getIdent()))
+                #  end campaign
+                self.__is_campaign_run = False

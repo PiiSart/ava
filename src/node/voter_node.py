@@ -11,7 +11,6 @@ from node.node_submitter import Submitter
 from node.node_type import NodeType
 import threading
 from node.node_receiver import Receiver
-from util.graphgen import getNeighbor
 
 class Voter(Node):
     '''
@@ -318,59 +317,21 @@ class Voter(Node):
         if len(self.getNeighbors()) == 1:
             # send echo on submitter
             self.__sendEcho(msg, msg.getSubmId())        
-        # check first link
+        # check first link (no explorer received)
         elif self.getFirstLinkId(cand_id) == None:
             # fist link doesn't exist
-            print("%s SET_FIRST_LINK TO: %s" % (self.getIdent(), msg.getSubmId()))
+            #print("%s SET_FIRST_LINK TO: %s" % (self.getIdent(), msg.getSubmId()))
             self.setFirstLinkId(cand_id, msg.getSubmId())
-            # send explorer on all neighbors except fist link and the candidate (if candidate is direct neighbor from node)
+            # send explorer on all neighbors except fist link
             for neighbor in self.getNeighbors():
-                if neighbor != msg.getSubmId() and neighbor != cand_id:
+                if neighbor != msg.getSubmId():
                     self.__sendExplorer(msg, neighbor)
         # first link already exist
-        else:
-            # send echo on submitter
-            self.__sendEcho(msg, msg.getSubmId())
+        else: # explorer already received
+            # increase echo counter and check ready state
+            self.echo(msg)
             
-        
-        
-        '''
-        # explorer exist
-        if self.getFirstLinkId(cand_id) != None:
-            msg_buf = Message()
-            msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), self.__c_levels)
-            msg_buf.setRecv(msg.getSubmId(), msg.getSubmIp(), msg.getSubmPort())
-            msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-            msg_buf.create(self.getVectorTime(), MsgType.ECHO_ECHO)
-            Submitter().send_message(self, msg_buf)   
-        else: # explorer doesn't exist
-            # set first link
-            self.setFirstLinkId(cand_id, msg.getSubmId()) 
-            # change confidence level
-            self.incCLevelCampaign(msg)         
-            # notify neighbors
-            neighbors = self.getNeighbors()
-            node_infos = self._pref.getNodeInfos()
-            
-            # check if node is a leaf, if yes, than send echo on first link
-            if len(neighbors) - 1 == 0:
-                msg_buf = Message()
-                msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), self.__c_levels)
-                msg_buf.setRecv(msg.getSubmId(), msg.getSubmIp(), msg.getSubmPort())
-                msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-                msg_buf.create(self.getVectorTime(), MsgType.ECHO_ECHO)
-                Submitter().send_message(self, msg_buf)
-            else:    
-                # send explorer on neighbors except first link            
-                for n_id in neighbors:
-                    if str(n_id) != str(self.getFirstLinkId(cand_id)) and str(n_id) != cand_id:
-                        msg_buf = Message()
-                        msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), self.__c_levels)
-                        msg_buf.setRecv(node_infos[n_id]["id"], node_infos[n_id]["ip"], node_infos[n_id]["port"])                
-                        msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-                        msg_buf.create(self.getVectorTime(), MsgType.ECHO_EXPLORER)                
-                        Submitter().send_message(self, msg_buf)
-         '''               
+         
     
     def echo(self, msg):
         '''
@@ -384,37 +345,13 @@ class Voter(Node):
         
         # all echos from neighbors received (except first link)
         if self.getEchoCounter(cand_id) == number_of_neighbors - 1:
-            print("%s CAND ID: %s" % (self.getIdent(), cand_id))
             # send echo on first link
-            self.__sendEcho(msg, self.getFirstLinkId(cand_id))
+            self.__sendEcho(msg, self.getFirstLinkId(cand_id))           
             # delete first link
             self.delFirstLinkId(cand_id)
             # delete echo counter
             self.delEchoCounter(cand_id)
-        
-        '''
-        
-        
-        # decrease echo counter
-        self.incEchoCounter(cand_id)
-        print("%s ECHO: anzahl echos: %s Kandidat: %s VON: %s" %(self.getIdent(), self.getEchoCounter(cand_id), cand_id, msg.getSubmId()))
-        # received echo from all neighbors
-        if self.getEchoCounter(cand_id) == len(self.getNeighbors()) - 1:            
-            # notify first link
-            msg_buf = Message()
-            msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), self.__c_levels)
-            first_link = self.getFirstLinkId(cand_id)
-            node_infos = self._pref.getNodeInfos()
-            msg_buf.setRecv(node_infos[first_link]["id"], node_infos[first_link]["ip"], node_infos[first_link]["port"])
-            msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-            msg_buf.create(self.getVectorTime(), MsgType.ECHO_ECHO)
-            Submitter().send_message(self, msg_buf)
             
-            # reset echo counter
-            self.resetEchoCounter(cand_id)
-            # delete first link
-            self.deleteFirstLinkId(cand_id)
-        '''
         
         
         

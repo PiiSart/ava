@@ -231,6 +231,14 @@ class Receiver(object):
             self.__LOGGER.info("%s I am candidate too! I don't vote! <cand_id:%s>" %(self.__node.getIdent(), msg.getCandId()))
             return
         
+        vector_time = int(self.__node.getVectorTime()[int(self.__node.getID())])
+        term_time = int(self.__node._pref.getVecTimeTermination())
+        
+        # time exceeded
+        if  vector_time > term_time:
+            self.__LOGGER.debug("%s vector time: %s <--> termination time: %s" % (self.__node.getIdent(), vector_time, term_time))
+            return
+        
         msg_buf = Message()
         msg_buf.setSubm(self.__node.getID(), self.__node.getIP(), self.__node.getPort(), self.__node.getCLevels())
         msg_buf.setRecv(msg.getCandId(), msg.getCandIp(), msg.getCandPort())

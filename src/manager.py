@@ -275,7 +275,7 @@ def __startVoteForMe():
     print("Avalable candidates: %s" % (str(cand_list)))
     cand_id = input("Which candidate:")
     if cand_id in cand_list:
-        __send(cand_id, MsgType.VOTE_FOR_ME)
+        __send(cand_id, MsgType.START_VOTE_FOR_ME)
     else:
         print("[%s] is not a candidate!" % (cand_id))
    
