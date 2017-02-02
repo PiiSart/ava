@@ -10,10 +10,10 @@ from abc import abstractmethod
 
 class A(object):
     def __init__(self):
-        self._test = "Fick dich"
+        pass
         
-    def printTest(self):
-        print(self._test)
+    def printTest(self, strr):
+        print(str)
         
         
 
@@ -23,31 +23,16 @@ class B(A):
         super().__init__()
         self.__blad = "blad"
     
-    def getBlad(self):
-        return self.__blad
+    def printTest(self, strr):
+        #print("Hallo Ihr Pennder!")
+        A.printTest(self, "Hallo")
+        #print("Bla bla: " + strr)
 
-
-class D(A):
-    def __init__(self):
-        #super().__init__()
-        self.__suka = "sucka"
-    
-    def getBlad(self):
-        return self.__suka
-
-class C(object):
-    def __init__(self, A):
-        self.__a = A
-        self.__a.printTest()
-        print(self.__a.getBlad())
-        print(self.__a._test)
-    
     
        
 if __name__ == '__main__':
     b = B()
-    d = D()
-    c = C(d)
+    b.printTest("selber Penner")
     
     
     

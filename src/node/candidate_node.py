@@ -101,8 +101,8 @@ class Candidate(Node):
         @type recv_id: string      
         @param msg: received message
         @type msg: node_message.Message       
-        @param i_am_candidate: True if the node is initiator, False if another node is initiator
-        @type i_am_candidate: boolean
+        @param initiator: True if the node is initiator, False if another node is initiator
+        @type initiator: boolean
         '''
         node_infos = self.getNodeInfos()
         msg_buf = Message()
@@ -241,6 +241,7 @@ class Candidate(Node):
                 # delete echo counter
                 self.delEchoCounter(cand_id)
         else:
+            self.incCountVotersResponses()
             # all echos from neighbors received (except first link)
             if self.getEchoCounter(cand_id) == number_of_neighbors:                
                 # send echo on observer

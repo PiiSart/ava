@@ -26,7 +26,7 @@ NODES 10
 EDGES 11
 
 # number of nodes until the node trust them whisper (in U2 number of responses until candidate start new voting)
-TRUST 4
+TRUST 2
 
 # ZMQ options
 # timeout for send (-1 : infinity) in milliseconds
@@ -40,4 +40,4 @@ CANDIDATE 0
 CANDIDATE 6
 
 # vector time termination
-VEC_TIME_TERMINATION 60
+VEC_TIME_TERMINATION 2000

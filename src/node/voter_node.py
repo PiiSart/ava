@@ -326,6 +326,8 @@ class Voter(Node):
             for neighbor in self.getNeighbors():
                 if neighbor != msg.getSubmId():
                     self.__sendExplorer(msg, neighbor)
+            # set confidence level
+            self.incCLevelCampaign(msg)
         # first link already exist
         else: # explorer already received
             # increase echo counter and check ready state
