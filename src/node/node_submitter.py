@@ -57,11 +57,15 @@ class Submitter(object):
         __socket.connect("tcp://" + message.getRecvIp() + ":" + message.getRecvPort())
         #self.__LOGGER.info(subm_id + " send message an [" + recv_id + "]: " + message)  
               
-        # send message        
+                
+        # adjust vecotr time
         Node.incLocalTime()
         message.setVectorTime(Node.getVectorTime())
+        # mark message
+        message.setMark(Node.isMarked())
+        
         self.__LOGGER.info(self.__getLogString(Node, message))
-                           
+        # send message
         __socket.send_string(message.toJson())
         __socket.close()
         __context.destroy()

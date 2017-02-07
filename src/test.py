@@ -10,11 +10,10 @@ from abc import abstractmethod
 
 class A(object):
     def __init__(self):
-        pass
+        self.__number
         
     def printTest(self, strr):
         print(str)
-        
         
 
 
@@ -31,8 +30,10 @@ class B(A):
     
        
 if __name__ == '__main__':
-    b = B()
-    b.printTest("selber Penner")
+    c_levels = {"6": 90, "5": 60}
+    
+    cand_id, level = c_levels.popitem()
+    print(cand_id + "   " + str(level))
     
     
     

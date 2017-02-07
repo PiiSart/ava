@@ -105,11 +105,14 @@ def __print_menue():
     print("* 2 : Shutdown node            *")
     print("* 3 : Shutdown all nodes       *")
     print("* 4 : Send message             *")
-    print("* 5 : Tell rumor               *")
-    print("* 7 : Statistic                *")
-    print("* 8 : Get rumor state          *")
+    #print("* 5 : Tell rumor               *")
+    #print("* 7 : Statistic                *")
+    #print("* 8 : Get rumor state          *")
     print("* 9 : Start vote for me        *")
-    print("* 10: Start campaign          *")
+    print("* 10: Start campaign           *")
+    print("* 11: Snapshot                 *")
+    print("* 12: Reset observer           *")
+    print("* 13: Unmark nodes             *")
     print("* 0 : Exit manager             *")
     print("*******************************")
     
@@ -273,20 +276,47 @@ def __initVectorTime():
 def __startVoteForMe():    
     cand_list = pref.getCandidateList()
     print("Avalable candidates: %s" % (str(cand_list)))
-    cand_id = input("Which candidate:")
-    if cand_id in cand_list:
-        __send(cand_id, MsgType.START_VOTE_FOR_ME)
-    else:
-        print("[%s] is not a candidate!" % (cand_id))
+    #cand_id = input("Which candidate:")
+    #if cand_id in cand_list:
+    #    __send(cand_id, MsgType.START_VOTE_FOR_ME)
+    #else:
+    #    print("[%s] is not a candidate!" % (cand_id))
+    for cand in cand_list:
+        __send(cand, MsgType.START_VOTE_FOR_ME)
    
 def __startCampaign():
     cand_list = pref.getCandidateList()
     print("Avalable candidates: %s" % (str(cand_list)))
-    cand_id = input("Which candidate:")
-    if cand_id in cand_list:
-        __send(cand_id, MsgType.START_CAMPAIGN)
-    else:
-        print("[%s] is not a candidate!" % (cand_id))
+    #cand_id = input("Which candidate:")
+    #if cand_id in cand_list:
+    #    __send(cand_id, MsgType.START_CAMPAIGN)
+    #else:
+    #    print("[%s] is not a candidate!" % (cand_id))
+    for cand in cand_list:
+        __send(cand, MsgType.CAMPAIGN)
+        
+def __snapshot():
+    '''
+    '''
+    for node_id in __NODES:
+        __send(node_id, MsgType.SNAPSHOT, "snapshot")
+    
+def __resetObserver():
+    '''
+    Reset all survey values by observer.
+    '''
+    msg = Message()
+    msg.setRecv("observer", "127.0.0.1", "11000")
+    msg.setSubm(__IDENT, __IP, __PORT)
+    msg.create(vector_time, MsgType.RESET)
+    ManSubmitter().send_m(msg)
+    
+def __unmarkNodes():
+    '''
+    Unmark all nodes.
+    '''
+    for node_id in __NODES:
+        __send(node_id, MsgType.UNMARK, "")
 
 options = {
         1 : __printAllNodes,
@@ -298,6 +328,9 @@ options = {
         8 : __getWhisperState,
         9 : __startVoteForMe,
         10: __startCampaign,
+        11: __snapshot,
+        12: __resetObserver,
+        13: __unmarkNodes
     }
 
 
@@ -307,6 +340,7 @@ if __name__ == '__main__':
     pref = Settings()
     pref.loadSettings()
     true_false = []
+    conf_level = {}
     vector_time = __initVectorTime()
     
     if pref.isGraphviz():

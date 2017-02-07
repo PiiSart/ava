@@ -16,6 +16,7 @@ from logger.logger import NodeLogger
 from util.settings import Settings
 from node.node_message import Message, MsgType
 from abc import abstractmethod
+from node.node_type import NodeType
 
 
 
@@ -41,6 +42,12 @@ class Node():
         self._LOGGER.debug(node_id + " My PID is: " + str(os.getpid()))
         self._pref = Settings()
         self._pref.loadSettings()
+        # snapshot
+        self.__marked = False       # node marked / unmarked
+        self.__marked_neighbors = 0 # number of neighbors who are already marked
+        self.__snapshot_ready = False       # snapshot on / off
+        self.__vote_over = False
+        # ------
         self.__rumor_count = 0
         self.__whisperer = []
         self.__neighbours = []                
@@ -51,6 +58,8 @@ class Node():
         # echo algorithm
         self.__echo_counts = {} # {"cand_id": <integer>, ...}
         self.__first_link = {}  # {"cand_id": <node_id as a string>, ...}
+        self.__confidence_levels = {}
+        
                            
         # apply node data
         self._LOGGER.debug(self.__ident + "save id: " + node_id);           
@@ -129,7 +138,39 @@ class Node():
             return True
         else:
             return False
+    
+    # snapshot       
+    def isMarked(self):
+        return self.__marked
+    
+    def setMarked(self, marked):
+        self.__marked = marked
         
+    def getMarkedNeighbors(self):
+        return self.__marked_neighbors
+    
+    def incMarkedNeighbors(self):
+        self.__marked_neighbors += 1
+    
+    def resetMarkedNeighbors(self):
+        self.__marked_neighbors = 0
+    
+    def snapshotReady(self):
+        return self.__snapshot_ready
+    
+    def __setSnapshotReady(self, value):
+        self.__snapshot_ready = value
+    
+    def isVoteOver(self):
+        return self.__vote_over
+    
+    def setVoteOver(self, value):
+        self.__vote_over = value     
+    # end snapshot
+    
+    def getCNLevels(self):
+        return self.__confidence_levels
+    
     def getFirstLinkId(self, cand_id):
         '''
         Get a first link (is a node id of which the node get a first explorer message) 
@@ -288,7 +329,7 @@ class Node():
                 self.__vector_time[i] = max(self.__vector_time[i], new_time[i])
         return self.__vector_time
     
-    def notifyNeighbours(self, message):
+    def notifyNeighbours(self, message="my id is"):
         '''
         Send on all neighbors his own node id
         
@@ -409,9 +450,95 @@ class Node():
                 counter += 1;
                 
         return neighbourList;    
+         
     
+    def handleSnapshot(self, msg):  
+        if self.snapshotReady() == False:        
+            # node is not marked, message is marked
+            if self.isMarked() == False and msg.isMarked() == True:
+                self.initSnapshot(msg)
+                # count marked neighbors
+                self.incMarkedNeighbors()           
+            # node is already marked
+            elif self.isMarked() == True:
+                # message unmarked, send received message on observer
+                if msg.isMarked() == False and self.getNodeType() != NodeType.CANDIDATE:
+                    msg_buf = Message()
+                    msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), msg.getCLevels())
+                    msg_buf.setRecv("400", "127.0.0.1", "11000")
+                    msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
+                    msg_buf.create(msg.getVectorTime(), msg.getMsgType(), msg.getMsg())
+                    Submitter().send_message(self, msg_buf)
+                    #self.notifyObserver(msg, str(msg.getSubmId()) + " unmarked message: " + str(msg.getCLevels()))
+                    print(("%s message is unmarked, send on observer!" % (self.getIdent())))
+                else:
+                    self.incMarkedNeighbors()
+            else:
+                # snapshot is off
+                pass           
+            
+            # all neighbors marked
+            if self.getMarkedNeighbors() == len(self.getNeighbors()):
+                msg_buf = Message()
+                msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), msg.getCLevels())
+                msg_buf.setRecv("400", "127.0.0.1", "11000")
+                msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
+                msg_buf.create(self.getVectorTime(), MsgType.READY, msg.getMsg())
+                Submitter().send_message(self, msg_buf)                
+                #self.notifyObserver(msg, "Message on Observer: READY")
+                #self._LOGGER.info("%s Message on Observer: READY " % (self.getIdent()))
+                # set snapshot ready True
+                self.__setSnapshotReady(True)
+                self.setMarked(False)
     
+    def initSnapshot(self, msg):
+        '''
+        Mark the node, enable the record and notify
+        neighbors.
+        '''
+        # set node marked
+        if self.isMarked() != True and self.snapshotReady() != True:
+            self.setMarked(True)
+            # enable record only Voter
+            if self.getNodeType() != NodeType.CANDIDATE:
+                # notify observer
+                msg_buf = Message()
+                msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), self.getCNLevels())
+                msg_buf.setRecv("400", "127.0.0.1", "11000")
+                msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
+                if MsgType.SNAPSHOT == msg.getMsgType():
+                    msg_buf.create(self.getVectorTime(), MsgType.MESSAGE, msg.getMsg())
+                else:
+                    msg_buf.create(self.getVectorTime(), msg.getMsgType(), msg.getMsg())
+                Submitter().send_message(self, msg_buf)
+                
+                #self.notifyObserver(msg, " first state: " + str(self.getCNLevels()))
+                #print("%s first state on observer!" % (self.getIdent()))
+            # notify neighbor 
+            self.notifyNeighbours("a'm marked!")
+            
     
+    def notifyObserver(self, msg, message):
+        msg_buf = Message()
+        msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), msg.getCLevels())
+        msg_buf.setRecv("400", "127.0.0.1", "11000")
+        msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
+        
+        if self.getMarkedNeighbors() == len(self.getNeighbors()):
+            msg_buf.create(self.getVectorTime(), MsgType.READY, str(message))
+        else:
+            msg_buf.create(self.getVectorTime(), msg.getMsgType(), str(message))
+        
+        Submitter().send_message(self, msg_buf)
         
     
-    
+    def unmark(self, msg):
+        '''
+        Unmark the node and reset snapshot.
+        '''
+        self.setMarked(False)
+        self.__setSnapshotReady(False)
+        self.__marked_neighbors = 0
+        self.__vote_over = False
+        #self.__initVectorTime()
+        

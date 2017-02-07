@@ -20,13 +20,13 @@ NODE_FILE ../../conf/node_list.txt
 MAX_NEIGHBORS 2
 
 # total number of nodes
-NODES 10
+NODES 100
 
 # number of edges
-EDGES 11
+EDGES 180
 
 # number of nodes until the node trust them whisper (in U2 number of responses until candidate start new voting)
-TRUST 2
+TRUST 40
 
 # ZMQ options
 # timeout for send (-1 : infinity) in milliseconds
@@ -36,8 +36,8 @@ LINGER_TIME 5000
 RCVTIMEO_TIME 2000
 
 # candidate nodes (value: node id)
-CANDIDATE 0
-CANDIDATE 6
+CANDIDATE 12
+CANDIDATE 7
 
 # vector time termination
-VEC_TIME_TERMINATION 2000
+VEC_TIME_TERMINATION 800

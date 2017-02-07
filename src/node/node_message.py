@@ -8,9 +8,10 @@ Message protocol (JSON)
     header: {
         timestamp: <string>
         vector_time: <list []>
-        subm : <dict {"id", "ip", "port", "c_levels":{"id":, "id":}>,
+        subm : <dict {"id", "ip", "port", "MsgType", "c_levels":{"id":, "id":}>,
         recv : <dict {"id", "ip", "port"}>,
         cand : <dict {"id", "ip", "port"}>,   
+        mark : integer (0 message isn't market, 1 message is marked)
     }
     data: {
         message: <string>
@@ -35,7 +36,7 @@ class Message(object):
         self.__submitter = {}
         self.__receiver = {}
         
-    def create(self, vector_time, msg_type, message = ""):
+    def create(self, vector_time, msg_type, message=""):
         '''
         Init message components
         '''
@@ -46,7 +47,8 @@ class Message(object):
         self.__header[MsgParts.RECV] = self.__receiver        
         self.__header[MsgParts.CAND] = self.__candidate
         self.__header[MsgParts.MSG_TYPE] = msg_type
-                
+        self.__header[MsgParts.MARK] = 0
+                        
         # create data
         self.__data[str(MsgParts.MSG)] = message
         
@@ -116,7 +118,8 @@ class Message(object):
     def __str__(self):
         str_buf = (" " + self.getMsg() + " | [MSG_TYPE]: " + self.getMsgType() +
                    " [TIMESTAMP]: " + self.getTimestamp() + 
-                   " [VECTOR_TIME]: " + str(self.getVectorTime())) 
+                   " [VECTOR_TIME]: " + str(self.getVectorTime()) +
+                   " [MARK]: " + str(self.isMarked())) 
                     
         return str_buf
             
@@ -185,6 +188,18 @@ class Message(object):
     
     def setVectorTime(self, vector_time):
         self.__header[MsgParts.VECTOR_TIME] = vector_time
+        
+    def isMarked(self):
+        if self.__header[MsgParts.MARK] == 0:
+            return False
+        else:
+            return True
+        
+    def setMark(self, mark):
+        if mark == True:
+            self.__header[MsgParts.MARK] = 1
+        else:
+            self.__header[MsgParts.MARK] = 0
    
 class MsgParts:
     '''
@@ -209,6 +224,7 @@ class MsgParts:
     CAND_IP = "cand_ip"
     CAND_PORT = "cand_port"
     C_LEVELS= "c_levels"
+    MARK = "mark"
     
     
 class MsgType:
@@ -230,3 +246,8 @@ class MsgType:
     ECHO_ECHO = "cm_echo"
     START_VOTE_FOR_ME = "cm_start_vote_for_me"
     START_CAMPAIGN = "cm_start_campaign"
+    SNAPSHOT = "cm_snapshot"
+    UNMARK = "cm_unmark"
+    READY = "cm_ready"
+    RESET = "cm_reset"
+    MY_VOTE ="cm_my_vote"

@@ -45,7 +45,9 @@ class Receiver(object):
             MsgType.VOTE_FOR_ME : self.__voteForMeHandler,
             MsgType.CAMPAIGN : self.__campaignHandler,
             MsgType.ECHO_EXPLORER : self.__explorerHandler,
-            MsgType.ECHO_ECHO : self.__echoEchoHandler
+            MsgType.ECHO_ECHO : self.__echoEchoHandler,
+            MsgType.SNAPSHOT : self.__snapshotHandler,
+            MsgType.UNMARK : self.__unmarkHandler,
         }
        
     def start(self, ip, port):
@@ -80,6 +82,8 @@ class Receiver(object):
             msg.setVectorTime(self.__node.setVectorTimeByReceive(msg.getVectorTime()))
             # print message to STDOUT
             self.__LOGGER.info(self.__getLogString(msg))
+            # check termination time
+            #self.__checkTermTime(msg)
             # handle message
             #try:                       
             self.__receiverHandler(msg)
@@ -106,6 +110,20 @@ class Receiver(object):
         
         recv_str = ident + " receive message from [" + subm_id + "]: " + str(msg)
         return recv_str
+    
+    def __checkTermTime(self, msg):
+        '''
+        Check if the termination time is reach, than notify the observer and
+        set vote_over flag of True.
+        '''
+        if self.__node.isVoteOver() == False and self.__node.getNodeType() != NodeType.CANDIDATE:
+            vector_time = int(self.__node.getVectorTime()[int(self.__node.getID())])
+            term_time = int(self.__node._pref.getVecTimeTermination())
+            
+            if vector_time > term_time:
+                self.__node.myVote()
+                self.__node.setVoteOver(True)
+    
     
     ###################################
     # HANDLER   
@@ -140,8 +158,8 @@ class Receiver(object):
         @param msg: received message
         @type msg: NodeMessage
         '''
-        # is nothing to do ;-)
-        pass
+        #if NodeType.CANDIDATE != self.__node.getNodeType():
+        self.__node.handleSnapshot(msg)
     
     def __rumorHandler(self, msg):
         '''
@@ -204,6 +222,13 @@ class Receiver(object):
         @param msg: received message
         @type msg: node.Message
         '''
+        vector_time = int(self.__node.getVectorTime()[int(self.__node.getID())])
+        term_time = int(self.__node._pref.getVecTimeTermination())
+        
+        # time exceeded
+        if  vector_time > term_time:
+            self.__LOGGER.debug("%s vector time: %s <--> termination time: %s" % (self.__node.getIdent(), vector_time, term_time))
+            return
         self.__node.incCountVotersResponses()
     
     def __iDontChooseYouHandler(self, msg):
@@ -213,6 +238,13 @@ class Receiver(object):
         @param msg: received message
         @type msg: node.Message
         '''
+        vector_time = int(self.__node.getVectorTime()[int(self.__node.getID())])
+        term_time = int(self.__node._pref.getVecTimeTermination())
+        
+        # time exceeded
+        if  vector_time > term_time:
+            self.__LOGGER.debug("%s vector time: %s <--> termination time: %s" % (self.__node.getIdent(), vector_time, term_time))
+            return
         self.__node.incCountVotersResponses()
         
     def __voteForMeHandler(self, msg):
@@ -239,22 +271,7 @@ class Receiver(object):
             self.__LOGGER.debug("%s vector time: %s <--> termination time: %s" % (self.__node.getIdent(), vector_time, term_time))
             return
         
-        msg_buf = Message()
-        msg_buf.setSubm(self.__node.getID(), self.__node.getIP(), self.__node.getPort(), self.__node.getCLevels())
-        msg_buf.setRecv(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-        msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-        
-        if self.__node.incCLevelVoteForMe(msg) == True:
-            # notify neighbors
-            self.__node.sendVoteForMeOnNeighbors(msg)#self.__node.notifyNeighbours(msg)
-            # msg on candidate 
-            msg_buf.create(self.__node.getVectorTime(), MsgType.KEEP_IT_UP, "i am support you!")
-        else:
-            # msg on candidate
-            msg_buf.create(self.__node.getVectorTime(), MsgType.I_DONT_CHOOSE_YOU, "i hate you!")
-        
-        #notify candidate
-        Submitter().send_message(self.__node, msg_buf)
+        self.__node.voteForMe(msg)
         
     
     def __campaignHandler(self, msg):
@@ -270,6 +287,14 @@ class Receiver(object):
         if self.__node.getNodeType() != NodeType.CANDIDATE:
             return
         
+        vector_time = int(self.__node.getVectorTime()[int(self.__node.getID())])
+        term_time = int(self.__node._pref.getVecTimeTermination())
+        
+        # time exceeded
+        if  vector_time > term_time:
+            self.__LOGGER.debug("%s vector time: %s <--> termination time: %s" % (self.__node.getIdent(), vector_time, term_time))
+            return
+        
         # start campaign
         self.__node.startVoting(1)
         
@@ -281,6 +306,15 @@ class Receiver(object):
         @param msg: received message
         @type msg: node.Message
         '''
+        
+        #vector_time = int(self.__node.getVectorTime()[int(self.__node.getID())])
+        #term_time = int(self.__node._pref.getVecTimeTermination())
+        
+        # time exceeded
+        #if  vector_time > term_time:
+        #    self.__LOGGER.debug("%s vector time: %s <--> termination time: %s" % (self.__node.getIdent(), vector_time, term_time))
+        #   return
+        
         self.__node.explorer(msg)
     
     def __echoEchoHandler(self, msg):
@@ -290,10 +324,48 @@ class Receiver(object):
         @param msg: received message
         @type msg: node.Message
         '''
+        #vector_time = int(self.__node.getVectorTime()[int(self.__node.getID())])
+        #term_time = int(self.__node._pref.getVecTimeTermination())
+        
+        # time exceeded
+        #if  vector_time > term_time:
+        #    self.__LOGGER.debug("%s vector time: %s <--> termination time: %s" % (self.__node.getIdent(), vector_time, term_time))
+        #    return
+        
         self.__node.echo(msg)
     
+    def __snapshotHandler(self, msg):
+        '''
+        Handle MsgType.SNAPSHOT. <VOTER>
+        
+               
+        @param msg: received message
+        @type msg: node.Message
+        '''
+        
+        #vector_time = int(self.__node.getVectorTime()[int(self.__node.getID())])
+        #term_time = int(self.__node._pref.getVecTimeTermination())
+        
+        # time exceeded
+        #if  vector_time > term_time:
+        #    self.__LOGGER.debug("%s vector time: %s <--> termination time: %s" % (self.__node.getIdent(), vector_time, term_time))
+        #    return
+        
+        self.__node.initSnapshot(msg)
+        
+        
+    def __unmarkHandler(self, msg):
+        '''
+        Handle MsgType.UNMARK. <VOTER, CANDIDATE>
+        
+               
+        @param msg: received message
+        @type msg: node.Message
+        '''
+        self.__node.unmark(msg)        
     
     
+       
     def __del__(self):
         '''        
         '''

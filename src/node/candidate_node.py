@@ -12,6 +12,7 @@ from node.node_type import NodeType
 import random
 from node.node_receiver import Receiver
 import threading
+import time
 
 class Candidate(Node):
     '''
@@ -27,6 +28,8 @@ class Candidate(Node):
         self.__node_type = NodeType.CANDIDATE
         self.__count_voters_responses = 0
         self.__is_campaign_run = False
+        self.__c_levels = {}
+        self.__setCLevels()
         self.__receiver = Receiver(self) 
         self.__start()         
     
@@ -41,6 +44,9 @@ class Candidate(Node):
         self.notifyNeighbours("my id is " + self.getID())
           
         receiver_t.join()
+    
+    #def isMarked(self):
+    #   return False
     
     def getNodeType(self):
         '''
@@ -91,6 +97,12 @@ class Candidate(Node):
         except KeyError:
             return True
     
+    def __setCLevels(self):
+        for cand in self._pref.getCandidateList():
+            if cand == self.getID():
+                self.__c_levels[cand] = 100
+            else:
+                self.__c_levels[cand] = 0
     
     def __sendExplorer(self, recv_id, msg=None, initiator=True, message_str=""):
         '''
@@ -105,18 +117,20 @@ class Candidate(Node):
         @type initiator: boolean
         '''
         node_infos = self.getNodeInfos()
-        msg_buf = Message()
-        msg_buf.setSubm(self.getID(), self.getIP(), self.getPort())
+        msg_buf = Message()        
         msg_buf.setRecv(node_infos[recv_id]["id"], 
                         node_infos[recv_id]["ip"], 
                         node_infos[recv_id]["port"]
                         )  
         # initiator
         if initiator == True:
+            msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), self.__c_levels)
             # set candidate itself              
             msg_buf.setCand(self.getID(), self.getIP(), self.getPort())
         # not initiator
         else:
+            msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), msg.getCLevels())
+            print("CANDIDATE: %s call-through C_LEVELS: %s" %(self.getIdent(), msg.getCLevels()))
             # set candidate from the received message
             msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
             
@@ -135,7 +149,7 @@ class Candidate(Node):
         node_infos = self.getNodeInfos()
         
         msg_buf = Message()
-        msg_buf.setSubm(self.getID(), self.getIP(), self.getPort())
+        msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), msg.getCLevels())
         msg_buf.setRecv(node_infos[recv_id]["id"],
                         node_infos[recv_id]["ip"], 
                         node_infos[recv_id]["port"]
@@ -153,24 +167,31 @@ class Candidate(Node):
         @param voting_type: define voting type
         @type voting_type: 0: VOTE_FOR_ME, 1: CAMPAIGN
         '''
+        
+        if self.isVoteOver() == True:
+            return
+        
         # reset voter response counter
         self.__count_voters_responses = 0
-        
+                 
         if voting_type == -1:
             choose = random.randint(0,1)
         else:
             choose = voting_type
                               
-        self._LOGGER.info("%s ***************************", self.getIdent())
-       
+        self._LOGGER.info("%s ***************************", self.getIdent())        
+        
+        
         # vote for me
         if choose == 0:
+            # reset voter response counter
+            #self.__count_voters_responses = 0
             self._LOGGER.info("%s **** START VOTE FOR ME ****", self.getIdent())
             self._LOGGER.info("%s ***************************", self.getIdent())
             # notify neighbors
             for neighbor in self.getNeighbors():
                 msg = Message()
-                msg.setSubm(self.getID(), self.getIP(), self.getPort())
+                msg.setSubm(self.getID(), self.getIP(), self.getPort(), self.__c_levels)
                 msg.setRecv(neighbor, 
                             self.getNodeInfos()[neighbor]["ip"], 
                             self.getNodeInfos()[neighbor]["port"]
@@ -181,6 +202,8 @@ class Candidate(Node):
         
         # campaign      
         if choose == 1 and self.__is_campaign_run == False:
+            # reset voter response counter
+            #self.__count_voters_responses = 0
             self.__is_campaign_run = True
             self._LOGGER.info("%s **** START CAMPAIGN    ****", self.getIdent()) 
             self._LOGGER.info("%s ***************************", self.getIdent())
@@ -194,6 +217,9 @@ class Candidate(Node):
         '''
         Handle explorer messages.
         '''
+        # snapshot 
+        self.handleSnapshot(msg)
+        
         cand_id = msg.getCandId()
         
         # explorer from foreign candidate
@@ -225,6 +251,9 @@ class Candidate(Node):
         Increase the echo counter and check whether the campaign is over. Notify
         submitter.
         '''
+        # snapshot 
+        self.handleSnapshot(msg)
+        
         cand_id = msg.getCandId()
         # increase echo counter for candidate
         self.incEchoCounter(cand_id)

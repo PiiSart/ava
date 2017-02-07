@@ -24,11 +24,12 @@ class Voter(Node):
         '''
         super().__init__(node_id)
         self.__cand_list = self._pref.getCandidateList()
-        self.__c_levels = {} # {"cand_id": level, "cand_id":level}
+        self.__c_levels = {} # {"cand_id": level, "cand_id":level}   
         # set confidence level
         self.__setCLevels()  
         self.__receiver = Receiver(self) 
-        self.__start()         
+        self.__start()
+               
     
     def __start(self):
         '''
@@ -42,7 +43,6 @@ class Voter(Node):
           
         receiver_t.join()
         
-    
     def getNodeType(self):
         '''
         Return the node type.
@@ -87,7 +87,10 @@ class Voter(Node):
                 return False
         except KeyError:
             return True
-               
+    
+    def getCNLevels(self):
+        return self.__c_levels
+              
     def __setCLevels(self): 
         '''
         Set the confidence level for candidates.
@@ -165,8 +168,48 @@ class Voter(Node):
         self._LOGGER.debug("%s i trust the candidate [%s]!" % (self.getIdent(), trust_cand_id))
         
         return trust_cand_id
-               
+    
+    def __sendVoteForMeOnNeighbors(self, msg):
+        '''
+        Send on all neighbors his own node id
         
+        @param message: full message (with header and data)
+        @type message: compare node_message
+        '''
+        self._LOGGER.debug(self.getIdent() + "my neighbours: " + str(self.getNeighbors()))
+        node_infos = self.getNodeInfos()
+        msg_buf = Message()        
+        for i in self.getNeighbors():
+            if str(i) != msg.getSubmId():
+                msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), self.__c_levels)
+                msg_buf.setRecv(str(node_infos[str(i)]["id"]), str(node_infos[str(i)]["ip"]), 
+                             str(node_infos[str(i)]["port"]))
+                msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
+                msg_buf.create(self.getVectorTime(), MsgType.VOTE_FOR_ME)
+                Submitter().send_message(self, msg_buf)          
+    
+    
+    def voteForMe(self, msg):
+        '''
+        Handle VOTE_FOR_ME messages
+        '''
+        msg_buf = Message()
+        msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), self.getCLevels())
+        msg_buf.setRecv(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
+        msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
+        
+        if self.incCLevelVoteForMe(msg) == True:            
+            # notify neighbors
+            self.__sendVoteForMeOnNeighbors(msg)#self.__node.notifyNeighbours(msg)
+            # msg on candidate 
+            msg_buf.create(self.getVectorTime(), MsgType.KEEP_IT_UP, "i am support you!")
+        else:
+            # msg on candidate
+            msg_buf.create(self.getVectorTime(), MsgType.I_DONT_CHOOSE_YOU, "i hate you!")
+        
+        #notify candidate
+        Submitter().send_message(self, msg_buf)
+       
     def incCLevelVoteForMe(self, msg):
         '''
         Increase confidence level from candidate by c/10. c is the confidence level
@@ -200,32 +243,18 @@ class Voter(Node):
                 self.__c_levels[cand_id] = 100
         
         # confide the candidate
-        #trust_cand = max(self.__c_levels, key=lambda candidate_id: self.__c_levels[candidate_id])
+        # trust_cand = max(self.__c_levels, key=lambda candidate_id: self.__c_levels[candidate_id])
         trust_cand = self.__getCandIdWithMaxCLevel()
+        
+        # snapshot 
+        self.handleSnapshot(msg)
         
         if trust_cand != None and int(trust_cand) == int(cand_id):
             return True
         else:
             return False
      
-    def sendVoteForMeOnNeighbors(self, msg):
-        '''
-        Send on all neighbors his own node id
-        
-        @param message: full message (with header and data)
-        @type message: compare node_message
-        '''
-        self._LOGGER.debug(self.getIdent() + "my neighbours: " + str(self.getNeighbors()))
-        node_infos = self.getNodeInfos()
-        msg_buf = Message()        
-        for i in self.getNeighbors():
-            if str(i) != msg.getSubmId():
-                msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), self.__c_levels)
-                msg_buf.setRecv(str(node_infos[str(i)]["id"]), str(node_infos[str(i)]["ip"]), 
-                             str(node_infos[str(i)]["port"]))
-                msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-                msg_buf.create(self.getVectorTime(), MsgType.VOTE_FOR_ME)
-                Submitter().send_message(self, msg_buf)   
+       
     
     def incCLevelCampaign(self, msg):
         '''
@@ -264,7 +293,9 @@ class Voter(Node):
             if self.__c_levels[c_id] > 100:
                 self.__c_levels[c_id] = 100
     
-    
+        # snapshot 
+        self.handleSnapshot(msg)
+        self._LOGGER.debug("%s C_LEVELS after increase: %s" % (self.getIdent(), str(self.__c_levels)))
     
     def __sendExplorer(self, msg, recv_id):
         '''
@@ -277,7 +308,7 @@ class Voter(Node):
         '''
         node_infos = self.getNodeInfos()
         msg_buf = Message()
-        msg_buf.setSubm(self.getID(), self.getIP(), self.getPort())
+        msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), self.__c_levels)
         msg_buf.setRecv(node_infos[recv_id]["id"], 
                         node_infos[recv_id]["ip"], 
                         node_infos[recv_id]["port"]
@@ -306,28 +337,29 @@ class Voter(Node):
         msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
         msg_buf.create(self.getVectorTime(), MsgType.ECHO_ECHO, msg.getMsg())
         Submitter().send_message(self, msg_buf)
-    
+            
     def explorer(self, msg):        
         '''
         Handle explorer messages
         '''
         cand_id = msg.getCandId()
-        
+               
         # check i'm leaf
         if len(self.getNeighbors()) == 1:
+            self.incCLevelCampaign(msg) 
             # send echo on submitter
-            self.__sendEcho(msg, msg.getSubmId())        
+            self.__sendEcho(msg, msg.getSubmId())                   
         # check first link (no explorer received)
         elif self.getFirstLinkId(cand_id) == None:
-            # fist link doesn't exist
+            # fist link doesn't exist            
+            # set confidence level
+            self.incCLevelCampaign(msg)
             #print("%s SET_FIRST_LINK TO: %s" % (self.getIdent(), msg.getSubmId()))
             self.setFirstLinkId(cand_id, msg.getSubmId())
             # send explorer on all neighbors except fist link
             for neighbor in self.getNeighbors():
                 if neighbor != msg.getSubmId():
-                    self.__sendExplorer(msg, neighbor)
-            # set confidence level
-            self.incCLevelCampaign(msg)
+                    self.__sendExplorer(msg, neighbor)            
         # first link already exist
         else: # explorer already received
             # increase echo counter and check ready state
@@ -354,10 +386,17 @@ class Voter(Node):
             # delete echo counter
             self.delEchoCounter(cand_id)
             
+            
+            
+    def myVote(self):
+        '''
+        Send after timeout the confidence levels on
+        observer.
+        '''
+        msg = Message()
+        msg.setSubm(self.getID(), self.getIP(), self.getPort(), self.__c_levels)
+        msg.setRecv("400", "127.0.0.1", "11000")
+        msg.create(self.getVectorTime(), MsgType.MY_VOTE)
+        Submitter().send_message(self, msg)
         
-        
-        
-        
-        
-        
-        
+    
