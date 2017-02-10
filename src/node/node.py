@@ -489,7 +489,7 @@ class Node():
                 #self._LOGGER.info("%s Message on Observer: READY " % (self.getIdent()))
                 # set snapshot ready True
                 self.__setSnapshotReady(True)
-                self.setMarked(False)
+                #self.setMarked(False)
     
     def initSnapshot(self, msg):
         '''
@@ -516,7 +516,7 @@ class Node():
                 #print("%s first state on observer!" % (self.getIdent()))
             # notify neighbor 
             self.notifyNeighbours("a'm marked!")
-            
+        
     
     def notifyObserver(self, msg, message):
         msg_buf = Message()
