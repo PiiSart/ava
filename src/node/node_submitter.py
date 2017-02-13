@@ -26,7 +26,7 @@ class Submitter(object):
         self.__settings.loadSettings()        
         
     
-    def send_message(self, Node, message):#, subm_id, subm_ip, subm_port, recv_id, recv_ip, recv_port): 
+    def send_message(self, Node, message):
         '''
         Send message to receiver.
         
@@ -56,14 +56,7 @@ class Submitter(object):
         # bind socket to ip and port        
         __socket.connect("tcp://" + message.getRecvIp() + ":" + message.getRecvPort())
         #self.__LOGGER.info(subm_id + " send message an [" + recv_id + "]: " + message)  
-              
                 
-        # adjust vecotr time
-        Node.incLocalTime()
-        message.setVectorTime(Node.getVectorTime())
-        # mark message
-        message.setMark(Node.isMarked())
-        
         self.__LOGGER.info(self.__getLogString(Node, message))
         # send message
         __socket.send_string(message.toJson())

@@ -114,6 +114,12 @@ class Settings(object):
     def getNodeInfos(self):
         return self.__NODES_INFOS
     
+    def delNodeInfo(self, node_id):
+        print("NODE_ID: " + str(node_id))
+        self.__NODES_INFOS.pop(str(node_id))
+        self.__NUMBER_OF_NODES -= 1
+        print("NUM OF N: "+ str(self.__NUMBER_OF_NODES))
+    
     def getNeigborsMap(self):
         return self.__NEIGHBORS_MAP
     
@@ -134,7 +140,7 @@ class Settings(object):
         return self.__TRUST
     
     def __setNumberOfNodes(self, value):
-        self.__NUMBER_OF_NODES = value
+        self.__NUMBER_OF_NODES = int(value)
         
     def getNumberOfNodes(self):
         return self.__NUMBER_OF_NODES

@@ -8,10 +8,9 @@ Message protocol (JSON)
     header: {
         timestamp: <string>
         vector_time: <list []>
-        subm : <dict {"id", "ip", "port", "MsgType", "c_levels":{"id":, "id":}>,
+        subm : <dict {"id", "ip", "port", "MsgType">,
         recv : <dict {"id", "ip", "port"}>,
-        cand : <dict {"id", "ip", "port"}>,   
-        mark : integer (0 message isn't market, 1 message is marked)
+        cand : <dict {"id", "ip", "port"}>  
     }
     data: {
         message: <string>
@@ -32,28 +31,25 @@ class Message(object):
     def __init__(self):        
         self.__header = {}
         self.__data = {}
-        self.__candidate = {MsgParts.CAND_ID:"", MsgParts.CAND_IP:"", MsgParts.CAND_PORT:""}
         self.__submitter = {}
         self.__receiver = {}
         
-    def create(self, vector_time, msg_type, message=""):
+    def create(self, lamport_time, msg_type, message=""):
         '''
         Init message components
         '''
         # create header
         self.__header[MsgParts.TIME_STAMP] = self.__time_stamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S:%f')[:-3]
-        self.__header[MsgParts.VECTOR_TIME] = vector_time        
+        self.__header[MsgParts.LAMPORT_TIME] = lamport_time        
         self.__header[MsgParts.SUBM] = self.__submitter
-        self.__header[MsgParts.RECV] = self.__receiver        
-        self.__header[MsgParts.CAND] = self.__candidate
+        self.__header[MsgParts.RECV] = self.__receiver
         self.__header[MsgParts.MSG_TYPE] = msg_type
-        self.__header[MsgParts.MARK] = 0
                         
         # create data
         self.__data[str(MsgParts.MSG)] = message
         
     
-    def setSubm(self, subm_id, subm_ip, subm_port, c_levels = {}):
+    def setSubm(self, subm_id, subm_ip, subm_port):
         '''
         Initialized submitter header.
         
@@ -65,7 +61,6 @@ class Message(object):
         self.__submitter[MsgParts.SUBM_ID] = subm_id
         self.__submitter[MsgParts.SUBM_IP] = subm_ip
         self.__submitter[MsgParts.SUBM_PORT] = subm_port
-        self.__submitter[MsgParts.C_LEVELS] = c_levels 
     
     def setRecv(self, recv_id, recv_ip, recv_port):
         '''
@@ -77,19 +72,6 @@ class Message(object):
         self.__receiver[MsgParts.RECV_ID] = recv_id
         self.__receiver[MsgParts.RECV_IP] = recv_ip
         self.__receiver[MsgParts.RECV_PORT] = recv_port
-    
-    def setCand(self, cand_id = "", cand_ip = "", cand_port = ""):
-        '''
-        Initialized submitter header. Will be set if the 
-        submitter is a candidate.
-        
-        @param cand_id: node
-        @type cand_id: string        
-        '''
-        self.__candidate[MsgParts.CAND_ID] = cand_id
-        self.__candidate[MsgParts.CAND_IP] = cand_ip
-        self.__candidate[MsgParts.CAND_PORT] = cand_port
-        
     
     def toJson(self):
         # create MSG_OBJ to send
@@ -104,22 +86,20 @@ class Message(object):
         __msg_obj = json.loads(json_str)
         self.__header = __msg_obj[MsgParts.HEADER]
         self.__data = __msg_obj[MsgParts.DATA]
-        self.__candidate = __msg_obj[MsgParts.HEADER][MsgParts.CAND]
         self.__submitter = __msg_obj[MsgParts.HEADER][MsgParts.SUBM]
         self.__receiver = __msg_obj[MsgParts.HEADER][MsgParts.RECV]
     
     #def __repr__(self):
     #    str_buf = (" " + self.getMsg() + " | [MSG_TYPE]: " + self.getMsgType() +
     #               " [TIMESTAMP]: " + self.getTimestamp() + 
-    #               " [VECTOR_TIME]: " + str(self.getVectorTime())) 
+    #               " [LAMPORT_TIME]: " + str(self.getLamportTime())) 
                     
     #    return str_buf
     
     def __str__(self):
         str_buf = (" " + self.getMsg() + " | [MSG_TYPE]: " + self.getMsgType() +
                    " [TIMESTAMP]: " + self.getTimestamp() + 
-                   " [VECTOR_TIME]: " + str(self.getVectorTime()) +
-                   " [MARK]: " + str(self.isMarked())) 
+                   " [LAMPORT_TIME]: " + str(self.getLamportTime())) 
                     
         return str_buf
             
@@ -133,10 +113,7 @@ class Message(object):
     
     def getTimestamp(self):
         return self.__header[MsgParts.TIME_STAMP]
-    
-    def getVectorTime(self):
-        return self.__header[MsgParts.VECTOR_TIME]
-    
+            
     def getMsgType(self):
         return self.__header[MsgParts.MSG_TYPE]
     
@@ -167,40 +144,15 @@ class Message(object):
     def getRecvPort(self):
         return self.__header[MsgParts.RECV][MsgParts.RECV_PORT]
     
-    def getCandId(self):
-        tmp = self.__header[MsgParts.CAND][MsgParts.CAND_ID]
-        return tmp#self.__header[MsgParts.CAND][MsgParts.CAND_ID]
-    
-    def getCandIp(self):
-        return self.__header[MsgParts.CAND][MsgParts.CAND_IP]
-    
-    def getCandPort(self):
-        return self.__header[MsgParts.CAND][MsgParts.CAND_PORT]
-    
-    def getCLevels(self):
-        return self.__header[MsgParts.SUBM][MsgParts.C_LEVELS]
-    
-    def getCLevel(self, cand_id):
-        try:
-            return self.__header[MsgParts.SUBM][MsgParts.C_LEVELS][cand_id]
-        except KeyError:
-            return None   
-    
-    def setVectorTime(self, vector_time):
-        self.__header[MsgParts.VECTOR_TIME] = vector_time
+    def setLamportTime(self, lamport_time):
+        self.__header[MsgParts.LAMPORT_TIME] = lamport_time
         
-    def isMarked(self):
-        if self.__header[MsgParts.MARK] == 0:
-            return False
-        else:
-            return True
-        
-    def setMark(self, mark):
-        if mark == True:
-            self.__header[MsgParts.MARK] = 1
-        else:
-            self.__header[MsgParts.MARK] = 0
-   
+    def getLamportTime(self):
+        return self.__header[MsgParts.LAMPORT_TIME]
+     
+     
+     
+     
 class MsgParts:
     '''
     Message components
@@ -215,39 +167,20 @@ class MsgParts:
     RECV_ID = "recv_id"
     RECV_IP = "recv_ip"
     RECV_PORT = "recv_port"
-    VECTOR_TIME = "vector_time"
+    LAMPORT_TIME = "lamport_time"
     DATA = "data"
     MSG_TYPE = "message_type"
     MSG = "message"
-    CAND = "cand"
-    CAND_ID = "cand_id"
-    CAND_IP = "cand_ip"
-    CAND_PORT = "cand_port"
-    C_LEVELS= "c_levels"
-    MARK = "mark"
-    
+        
     
 class MsgType:
     '''
     Controll messages
     '''
     QUIT = "cm_quit"
-    IM_DOWN = "cm_down"
-    RUMOR = "cm_rumor"
-    RUMOR_STATE = "cm_rumor_state"
-    TRUE = "cm_true"
-    FALSE = "cm_false"
-    I_DONT_CHOOSE_YOU = "cm_i_dont_choose_you"
-    KEEP_IT_UP = "cm_keep_it_up"
-    VOTE_FOR_ME = "cm_vote_for_me"
-    CAMPAIGN = "cm_campaign"
+    IM_DOWN = "cm_down"    
     MESSAGE = "cm_message"
-    ECHO_EXPLORER = "cm_exploer"
-    ECHO_ECHO = "cm_echo"
-    START_VOTE_FOR_ME = "cm_start_vote_for_me"
-    START_CAMPAIGN = "cm_start_campaign"
-    SNAPSHOT = "cm_snapshot"
-    UNMARK = "cm_unmark"
-    READY = "cm_ready"
-    RESET = "cm_reset"
-    MY_VOTE ="cm_my_vote"
+    REQUEST = "cm_request"
+    RELEASE = "cm_release"
+    ACKNOWLEDGE = "cm_acknowledge"
+    

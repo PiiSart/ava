@@ -26,43 +26,21 @@ def getNeighbor(graph, node_id, number_of_nodes):
                 found = True;
     return neighbor_id
 
+
+
 def __createGraphviz(nodes, edges):
-    #nodes = int(sys.argv[1])
-    #edges = int(sys.argv[2])
-    graph = {}
+    '''
+    '''
     file = open("../conf/graphviz.txt", "w")
     file.write("graph G{\n")
-    e = 0
-    while e < edges:
-        print("while")
-        for n in range(0, nodes) :                    
-            if n in graph.keys():
-                # search for neighbor
-                random_node = getNeighbor(graph, n, nodes)
-                graph.get(n).append(random_node)
-                file.write(str(n) + " -- " + str(random_node) + ";\n")
-            else:   
-                random_node = None  
-                # node can not have herself as neighbors                   
-                while random_node == n or random_node is None:                            
-                    random_node = randint(0,nodes - 1)
-                    # skip dual edges
-                    if random_node in graph.keys():
-                        if n in graph.get(random_node):
-                            random_node = None
-                
-                graph[n] = [random_node]
-                file.write(str(n) + " -- " + str(random_node) + ";\n")                   
-            
-            
-            e +=  1
-            if(e >= edges):
-                break
-            
-            
+    for n in range(0, nodes) :
+        if n % 2 == 0:   
+            file.write(str(n) + " -- " + str(n + 1) + ";\n")
+        else:
+            file.write(str(n) + " -- " + str(n - 1) + ";\n")
     file.write("}")
     file.close()
-    print(graph)
+
 
 if __name__ == '__main__':
     if len(sys.argv) == 3:

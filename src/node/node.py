@@ -8,23 +8,23 @@ Node
 '''
 
 import os
-import random
 import threading
 from .node_receiver import Receiver
 from .node_submitter import Submitter
 from logger.logger import NodeLogger
 from util.settings import Settings
 from node.node_message import Message, MsgType
-from abc import abstractmethod
-from node.node_type import NodeType
+from queue import PriorityQueue
+from os import path
+import time
 
-
-
-class Node():
+class Node(object):
     """
     Local node. 
     """
     
+    __FILE = "../../conf/ts_id.txt"
+    __FILE_ACCESS_MODE = "rb+"
              
     def __init__(self, node_id):
         """
@@ -42,25 +42,19 @@ class Node():
         self._LOGGER.debug(node_id + " My PID is: " + str(os.getpid()))
         self._pref = Settings()
         self._pref.loadSettings()
-        # snapshot
-        self.__marked = False       # node marked / unmarked
-        self.__marked_neighbors = 0 # number of neighbors who are already marked
-        self.__snapshot_ready = False       # snapshot on / off
-        self.__vote_over = False
-        # ------
-        self.__rumor_count = 0
-        self.__whisperer = []
+        
+        self.__im_down = False
         self.__neighbours = []                
         self.__node_infos = self._pref.getNodeInfos()
+        self.__total_nodes = self._pref.getNumberOfNodes()
         # vector time
-        self.__vector_time = self.__initVectorTime()        
-        self._LOGGER.debug(self.__ident + " Vector time: " + str(list(self.__vector_time)))
-        # echo algorithm
-        self.__echo_counts = {} # {"cand_id": <integer>, ...}
-        self.__first_link = {}  # {"cand_id": <node_id as a string>, ...}
-        self.__confidence_levels = {}
-        
-                           
+        #self.__vector_time = self.__initVectorTime()
+        self.__lamport_time = 0  
+        self.__number_of_ack = 0
+        self.__zero_counter = 0
+        # queue
+        self.__request_queue = PriorityQueue()
+         
         # apply node data
         self._LOGGER.debug(self.__ident + "save id: " + node_id);           
         self.__id = node_id;
@@ -81,8 +75,8 @@ class Node():
                 #self.__neighbours = []
                 self._LOGGER.warning(self.__ident + " has no neighbors!")
         else:
-            self._LOGGER.debug(self.__ident + " max number of neighbors: " + str(self._pref.getMaxNeighbors()))
-            self.__neighbours = self.__defineNeighbours(int(self._pref.getMaxNeighbors()));
+            self._LOGGER.error("not suported!")
+            #self.__neighbours = self.__defineNeighbours(int(self._pref.getMaxNeighbors()));
             
         self._LOGGER.debug(self.__ident + "selected neighbors: " + str(self.__neighbours));
         
@@ -99,17 +93,14 @@ class Node():
         self._LOGGER.debug(self.__ident + "starterd ...")     
         receiver_t.start() 
         # send own ID on all neighbours
-        self.notifyNeighbours("my id is " + self.__id)
+        self.requestWriteAccess()
           
         receiver_t.join()
    
-    def __del__(self):
-        """
-        Destroy Node object
-        """
-        pass
     
+    #################################################################
     # public methods
+    #################################################################
     def getID(self):
         return self.__id;
     
@@ -122,142 +113,15 @@ class Node():
     def getIP(self):
         return self.__ip; 
     
-    def isExplorerExist(self, cand_id):
-        '''
-        Get state of the explorer.
-        True: node has the explorer message already received
-        False: in another case
-        
-        @param cand_id: candidaten id, who initiate a campaign
-        @type cand_id: string
-        
-        @return: True, if the node received an explorer. False in another case.
-        @type __explorer[cand_id]: boolean 
-        '''
-        if cand_id in self.__first_link:
-            return True
-        else:
-            return False
+    def getLock(self):
+        return self.__lock
     
-    # snapshot       
-    def isMarked(self):
-        return self.__marked
+    def getImDown(self):
+        return self.__im_down
     
-    def setMarked(self, marked):
-        self.__marked = marked
-        
-    def getMarkedNeighbors(self):
-        return self.__marked_neighbors
-    
-    def incMarkedNeighbors(self):
-        self.__marked_neighbors += 1
-    
-    def resetMarkedNeighbors(self):
-        self.__marked_neighbors = 0
-    
-    def snapshotReady(self):
-        return self.__snapshot_ready
-    
-    def __setSnapshotReady(self, value):
-        self.__snapshot_ready = value
-    
-    def isVoteOver(self):
-        return self.__vote_over
-    
-    def setVoteOver(self, value):
-        self.__vote_over = value     
-    # end snapshot
-    
-    def getCNLevels(self):
-        return self.__confidence_levels
-    
-    def getFirstLinkId(self, cand_id):
-        '''
-        Get a first link (is a node id of which the node get a first explorer message) 
-        related to candidate.
-        
-        @param cand_id: candidate id from the candidate who initiate a campaign
-        @param cand_id: string
-        
-        @return: first link id or None if the candidate is not in the dictionary
-        @type __first_link_id[cand_id]: string or None
-        '''
-        #print("%s FIRS LINKs: %s" % (self.getIdent(), self.__first_link))
-        if cand_id in self.__first_link:
-            return self.__first_link[cand_id]
-        else:
-            return None
-    
-    def setFirstLinkId(self, cand_id, f_link):
-        '''
-        Set a first link (is a node id of which the node get a first explorer message)
-        related to candidate.
-        
-        @param cand_id: candidate id from the candidate who initiate a campaign
-        @type cand_id: string
-        @param f_link_id: first link id
-        @type f_link_id: string
-        '''
-        self.__first_link[cand_id] = f_link
-        
-    def delFirstLinkId(self, cand_id):
-        '''
-        Delete first link id.
-        
-        @param cand_id: candidate id from the candidate who initiate a campaign
-        @type cand_id: string
-        '''
-        if cand_id in self.__first_link:
-            self.__first_link.pop(cand_id)
-
-    def incEchoCounter(self, cand_id):
-        '''
-        Increase a number of received echo's related to candidate.
-        
-        @param cand_id: candidate id from the candidate who initiate a campaign
-        @type cand_id: string
-        '''      
-        if cand_id in self.__echo_counts:
-            self.__echo_counts[cand_id] += 1
-        else:
-            self.__echo_counts[cand_id] = 1
-            
-    def decEchoCounter(self, cand_id):
-        '''
-        Decrease a number of received echo's related to candidate.
-        
-        @param cand_id: candidate id from the candidate who initiate a campaign
-        @type cand_id: string
-        '''      
-        if cand_id in self.__echo_counts:
-            self.__echo_counts[cand_id] -= 1
-    
-    def getEchoCounter(self, cand_id):
-        if cand_id in self.__echo_counts:
-            return self.__echo_counts[cand_id]
-        else:
-            return 0      
-    
-    def delEchoCounter(self, cand_id):
-        '''
-        Delet echo counter from candidate with cand_id.
-        
-        @param cand_id: candidate id from the candidate who initiate a campaign
-        @type cand_id: string
-        '''
-        if cand_id in self.__echo_counts:
-            self.__echo_counts.pop(cand_id)
-    
-    def resetEchoCounter(self, cand_id):
-        '''
-        Reset a number of received echo's from candidate with cand_id to 0.
-        
-        @param cand_id: candidate id from the candidate who initiate a campaign
-        @type cand_id: string
-        '''
-        if cand_id in self.__echo_counts:
-            self.__echo_counts[cand_id] = 0
-        
+    def setImDown(self, vlaue):
+        self.__im_down = vlaue
+ 
     def getNeighbors(self):
         '''
         Return a list with neighbors.
@@ -273,272 +137,247 @@ class Node():
         
         @return: List whti nodes informations
         @type self.__node_infos: list[string]
-        '''
+        '''        
         return self.__node_infos
-    
-    def getVectorTime(self):
+            
+    def getLamportTime(self):
         '''
-        Return local vector time
+        Return the local lamport time.
         
-        @return: local vector time
-        @type self.__vector_time: list[integer]
+        @return: local lamport time
+        @type __lemport_time: integer
         '''
-        return self.__vector_time      
-    
-    def getEchoCounts(self):
+        return self.__lamport_time    
+                 
+    def incLamportTime(self, received_time=-1):
         '''
-        Return number of echo's
+        Increment lamport time.
         
-        @return: number of received echo's
-        @type self.__echo_counts: dictionary {"cand_id": <integer>, ...}
+        @param received_time: received lamport time
+        @type received_time: integer
         '''
-        return self.__echo_counts
-                    
-    def incRumorCount(self):
-        '''
-        Counts rumors
-        '''
-        self.__rumor_count += 1
+        #self.__lock_time.acquire()
+        if self.__lamport_time < received_time:
+            self.__lamport_time = received_time
+            
+        self.__lamport_time += 1
+        #self.__lock_time.release()
+        return self.__lamport_time
     
-    def appendWhisperer(self, whisperer):
+       
+    def requestWriteAccess(self):
         '''
-        Append node id to the rumor list from the node, who told the rumor
-        '''
-        self.__whisperer.append(whisperer)
-             
-    def incLocalTime(self):
-        '''
-        Increments in time-vector his own time
-        '''
-        self.__vector_time[int(self.__id)] += 1
-    
-    def setVectorTimeByReceive(self, new_time):
-        '''
-        Adjust vector time by receive.
-        Own time: + 1
-        Other: max.(local time, received time)
+        Send on all processes a request. 
         
-        @param new_time: received time
-        @type new_time: list [1, 2, ....]
-        '''
-        # set local time
-        self.incLocalTime()
-        # change time another nodes, except own local time
-        for i in range(int(self._pref.getNumberOfNodes())):
-            if i != int(self.__id):
-                self.__vector_time[i] = max(self.__vector_time[i], new_time[i])
-        return self.__vector_time
-    
-    def notifyNeighbours(self, message="my id is"):
-        '''
-        Send on all neighbors his own node id
-        
-        @param message: full message (with header and data)
+        @param message: message to send
         @type message: compare node_message
         '''
-        self._LOGGER.debug(self.__ident + "my neighbours: " + str(self.__neighbours))
-        msg_buf = Message()        
-        for i in self.__neighbours:
-            msg_buf.setSubm(self.__id, self.__ip, self.__port)
-            msg_buf.setRecv(str(self.__node_infos[str(i)]["id"]), str(self.__node_infos[str(i)]["ip"]), 
-                         str(self.__node_infos[str(i)]["port"]))
-            msg_buf.create(self.__vector_time, MsgType.MESSAGE, message)
-            Submitter().send_message(self, msg_buf)
-       
-    def getRumorState(self, msg):
-        '''
-        Response a rumor state on requester.
-        cm_true: if the node trust rumor
-        cm_false: if the node not trust rumor
         
-        @param msg: full message (with header and data)
-        @type msg: compare node_message
-        '''
-        
-        self._LOGGER.info(self.__ident + " my whisperer: " + str(self.__whisperer))
-        msg_buf = Message()
-        msg_buf.setSubm(self.__id, self.__ip, self.__port)
-        msg_buf.setRecv(msg.getSubmId(), msg.getSubmIp(), msg.getSubmPort())
-        
-        # trust them rumor ?
-        if self.__rumor_count >= int(self._pref.getTrust()):
-            self._LOGGER.debug(self.__ident + " i'm trust rumor: rumor_count " + str(self.__rumor_count) + " trust value " + self._pref.getTrust())            
-            msg_buf.create(self.__vector_time, MsgType.RUMOR_STATE, MsgType.TRUE)            
-        else:
-            self._LOGGER.debug(self.__ident + " i'm not trust rumor: whisper_count " + str(self.__rumor_count) + " trust value " + self._pref.getTrust())
-            msg_buf.create(self.__vector_time, MsgType.RUMOR_STATE, MsgType.FALSE)            
-        Submitter().send_message(self, msg_buf)       
-    
-    def tellRumorToNeighbors(self, message):
-        '''
-        Send on his neighbors a rumor.
-        '''        
-        self.__whisperer.append(message.getSubmId()) 
-        self._LOGGER.debug(self.__ident + " my neighbours " + str(self.__neighbours))
-        for n in self.__neighbours: 
-            if str(n) != message.getSubmId() and (str(n) not in self.__whisperer):
-                self._LOGGER.debug(self.__ident + "tell whisper on [" + n + "]")
-                msg_buf = Message()
-                msg_buf.setSubm(self.__id, self.__ip, self.__port)
-                msg_buf.setRecv(n, self.__node_infos[n]["ip"], self.__node_infos[n]["port"])
-                msg_buf.init(self.__vector_time, MsgType.RUMOR, message.getMsg())
-                Submitter().send_message(self, msg_buf)
-    
-    
-    @abstractmethod
-    def echo(self, msg):
-        '''
-        Handle echo messages.
-        '''
-        pass
-    
-    @abstractmethod
-    def explorer(self, msg=None):
-        '''
-        Handle explorer messages.
-        '''
-        pass  
-    
-    @abstractmethod
-    def getNodeType(self):
-        pass
-       
-    # private methods
-       
-    def __initVectorTime(self):
-        '''
-        Initialized local vector time with 0.
-        
-        @return: local vector time
-        @type vector: list[integer]
-        '''
-        vector = []
-        for i in range(0, int(self._pref.getNumberOfNodes())):
-            vector.append(i - i) # init with zero
-        return vector
-    
-    def __checkID(self, node_id): 
-        """
-        Check if node id is in node list.
-        
-        @param node_id: node id
-        @type node_id: int 
-        @return: true if node list contain the node id, false in the oder case
-        """       
-        return str(node_id) in self.__node_infos.keys();
-    
-    def __defineNeighbours(self, maxNeighbours):
-        """
-        Select random neighbors id's from a list.
-        
-        @param maxNeighbours: max number of neighbors
-        @type maxNeighbours: int
-        @return: random list of neighbors id's
-        """
-        counter = 0;
-        neighbourList = [];
-        
-        # suche in der List nach zufaelligen Nachbarn-Ids
-        while counter < maxNeighbours:
-            neighbourId = "".join(random.choice(list(self.__node_infos.keys())));            
-            self._LOGGER.debug(self.__ident + "random neighbor id: " + neighbourId);
+        ts_list = []        
+        time_copy = self.incLamportTime() 
+        ts_list.append(time_copy)
+        ts_list.append(int(self.__id))        
+        self.__addWriteRequest(ts_list)        
             
-            # Nachbar-Id muessen untereinander unterschiedlich sein, sowie ungleich eigner ID
-            # Konvertierung zum String, damit der Vergleich korrekt funktioniert!
-            if neighbourId not in neighbourList and str(neighbourId) != str(self.__id):
-                neighbourList.append(neighbourId);
-                counter += 1;
+        #for i in range(0, int(self._pref.getNumberOfNodes())):
+        for node_id in self.__node_infos:
+            #print("%s WWWW: %s " % (self.__ident, node_id))
+            if int(node_id) != int(self.__id):
+                self.send(node_id, MsgType.REQUEST, time_copy)
                 
-        return neighbourList;    
-         
     
-    def handleSnapshot(self, msg):  
-        if self.snapshotReady() == False:        
-            # node is not marked, message is marked
-            if self.isMarked() == False and msg.isMarked() == True:
-                self.initSnapshot(msg)
-                # count marked neighbors
-                self.incMarkedNeighbors()           
-            # node is already marked
-            elif self.isMarked() == True:
-                # message unmarked, send received message on observer
-                if msg.isMarked() == False and self.getNodeType() != NodeType.CANDIDATE:
-                    msg_buf = Message()
-                    msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), msg.getCLevels())
-                    msg_buf.setRecv("400", "127.0.0.1", "11000")
-                    msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-                    msg_buf.create(msg.getVectorTime(), msg.getMsgType(), msg.getMsg())
-                    Submitter().send_message(self, msg_buf)
-                    #self.notifyObserver(msg, str(msg.getSubmId()) + " unmarked message: " + str(msg.getCLevels()))
-                    print(("%s message is unmarked, send on observer!" % (self.getIdent())))
-                else:
-                    self.incMarkedNeighbors()
+    def handleRequest(self, msg):
+        '''
+        Handle message type REQUEST.
+        
+        @param msg: received message
+        @type msg: node_message.Message
+        '''
+        # add request to the queue 
+        ts_pid_list = []       
+        pid = int(msg.getSubmId())
+        ts = int(msg.getLamportTime())        
+        ts_pid_list.append(ts)
+        ts_pid_list.append(pid)        
+        self.__addWriteRequest(ts_pid_list)
+                
+        # send acknowledge
+        l_time = self.incLamportTime()
+        self.send(pid, MsgType.ACKNOWLEDGE, l_time)
+        
+        self.checkWriteAccess()
+    
+    def handleAcknowledge(self, msg):
+        '''
+        Count received acknowledges and check the write access.
+        
+        @param msg: received message object
+        @type msg: node_message.Message
+        '''  
+        self.__number_of_ack += 1     
+        self.checkWriteAccess()
+        
+    def handleRelease(self, msg):
+        '''
+        Remove fist element from queue.
+        
+        @param msg: received message object
+        @type msg: node_message.Message
+        '''
+        if self.__zero_counter != 3:
+            print("%s QUEUE FOR RELeASE: %s" % (self.__ident, list(self.__request_queue.queue)))
+            # remove first element
+            print("%s RELEASE: %s" % (self.getIdent(), self.__request_queue.get()))
+            self.checkWriteAccess()
+        
+    def checkWriteAccess(self): 
+        '''
+        Check if node can write.
+        '''   
+        total_nodes = len(self.__node_infos)        
+        q_size = int(self.__request_queue.qsize())
+        self._LOGGER.info("%s TOTAL NODES: %s QUEUE_SIZE: %s ACK: %s" % (self.__ident, str(total_nodes), str(q_size), str(self.__number_of_ack)))
+        if q_size == total_nodes and self.__number_of_ack == total_nodes - 1:
+            self._LOGGER.warning("%s REQUEST QUEUE: %s" % (self.getIdent(), list(self.__request_queue.queue)))    
+            
+            ts_pid_list = self.__request_queue.get()            
+                     
+            if(ts_pid_list[1] == int(self.__id)):
+                self.write(ts_pid_list)
             else:
-                # snapshot is off
-                pass           
+                self.__addWriteRequest(ts_pid_list) 
             
-            # all neighbors marked
-            if self.getMarkedNeighbors() == len(self.getNeighbors()):
-                msg_buf = Message()
-                msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), msg.getCLevels())
-                msg_buf.setRecv("400", "127.0.0.1", "11000")
-                msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-                msg_buf.create(self.getVectorTime(), MsgType.READY, msg.getMsg())
-                Submitter().send_message(self, msg_buf)                
-                #self.notifyObserver(msg, "Message on Observer: READY")
-                #self._LOGGER.info("%s Message on Observer: READY " % (self.getIdent()))
-                # set snapshot ready True
-                self.__setSnapshotReady(True)
-                #self.setMarked(False)
-    
-    def initSnapshot(self, msg):
+    def write(self, ts_pid_list):
         '''
-        Mark the node, enable the record and notify
-        neighbors.
+        Write in a file. Send release after writing.
+        @param ts_pid_list: list with two values <lamport time> <process id>
+        @type ts_pid_list: list<integer>
         '''
-        # set node marked
-        if self.isMarked() != True and self.snapshotReady() != True:
-            self.setMarked(True)
-            # enable record only Voter
-            if self.getNodeType() != NodeType.CANDIDATE:
-                # notify observer
-                msg_buf = Message()
-                msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), self.getCNLevels())
-                msg_buf.setRecv("400", "127.0.0.1", "11000")
-                msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
-                if MsgType.SNAPSHOT == msg.getMsgType():
-                    msg_buf.create(self.getVectorTime(), MsgType.MESSAGE, msg.getMsg())
-                else:
-                    msg_buf.create(self.getVectorTime(), msg.getMsgType(), msg.getMsg())
-                Submitter().send_message(self, msg_buf)
-                
-                #self.notifyObserver(msg, " first state: " + str(self.getCNLevels()))
-                #print("%s first state on observer!" % (self.getIdent()))
-            # notify neighbor 
-            self.notifyNeighbours("a'm marked!")
+        PATH = path.join(path.dirname(path.abspath(__file__)), self.__FILE)
+        file = open(PATH, self.__FILE_ACCESS_MODE)
         
-    
-    def notifyObserver(self, msg, message):
-        msg_buf = Message()
-        msg_buf.setSubm(self.getID(), self.getIP(), self.getPort(), msg.getCLevels())
-        msg_buf.setRecv("400", "127.0.0.1", "11000")
-        msg_buf.setCand(msg.getCandId(), msg.getCandIp(), msg.getCandPort())
+        bytess = file.readline()
+        str_buf = bytess.decode(encoding='utf_8', errors='strict')        
+        number = int(str_buf)
         
-        if self.getMarkedNeighbors() == len(self.getNeighbors()):
-            msg_buf.create(self.getVectorTime(), MsgType.READY, str(message))
+        if number == 0:
+            self.__zero_counter += 1
+            
+              
+        if ts_pid_list[1] % 2 == 0:
+            number -= 1
         else:
-            msg_buf.create(self.getVectorTime(), msg.getMsgType(), str(message))
+            number += 1
+            
+        if self.__zero_counter != 3:   
+            file.seek(0,0)
+            str_buf = str(number) + "\n"
+            file.write(str_buf.encode(encoding='utf_8', errors='strict'))
+            
+        file.seek(0,2)
+        str_buf = "ID: " + str(ts_pid_list[1]) + " Value: " + str(number)
+        file.write(str_buf.encode(encoding='utf_8', errors='strict'))
+        file.write(b"\n")
+        file.close()
         
-        Submitter().send_message(self, msg_buf)
+        if self.__zero_counter == 3:            
+            # shutdown neighbor
+            neighbor_id = self.__neighbours[0]
+            self.send(str(neighbor_id), MsgType.QUIT, self.incLamportTime())
+            self.__removeDownNodesFromNodeInfos(neighbor_id)
+            self.__removeDownNodesFromQueue(neighbor_id)  
+                                    
+            # shutdown me
+            self.send(self.__id, MsgType.QUIT, self.incLamportTime())
+            self.__im_down = True
+
+        if self.__zero_counter != 3:
+            # send release        
+            self.__number_of_ack = 0       
+            for node_id in self.__node_infos:
+                #print("%s WWWW: %s " % (self.__ident, node_id))
+                if int(node_id) != int(self.__id):
+                    self.send(node_id, MsgType.RELEASE, self.incLamportTime())
+            # check write access
+            self.requestWriteAccess()
         
     
-    def unmark(self, msg):
-        '''
-        Unmark the node and reset snapshot.
-        '''
-        self.setMarked(False)
-        self.__setSnapshotReady(False)
-        self.__marked_neighbors = 0
-        self.__vote_over = False
-        #self.__initVectorTime()
+    def handleImDown(self, msg):
+        if self.__im_down == False:
+            self.__removeDownNodesFromQueue(msg.getSubmId())
+            self.__removeDownNodesFromNodeInfos(msg.getSubmId())
+            print("%s QUEUE after REMOVE: %s" % (self.__ident, list(self.__request_queue.queue)))
+            print("%s NODE_INFO after REMOVE: %s" % (self.__ident, self.__node_infos)) 
+            self.__number_of_ack -= 1       
+            self.checkWriteAccess()
+    
         
+    #################################################################      
+    # private methods
+    #################################################################
+    
+    def send(self, node_id, msg_type, l_time, msg_str=""):
+        '''
+        Send a message.
+        
+        @param node_id: id from received node
+        @type node_id: string
+        @param msg_type: message type
+        @type msg_type: MsgType
+        @param l_time: lamport time
+        @type l_time: integer        
+        @param msg_str: message string
+        @type msg_str: string
+        '''        
+        msg_buf = Message() 
+        msg_buf.setSubm(self.__id, self.__ip, self.__port)
+        msg_buf.setRecv(str(self.__node_infos[str(node_id)]["id"]), 
+                        str(self.__node_infos[str(node_id)]["ip"]), 
+                        str(self.__node_infos[str(node_id)]["port"]))
+        msg_buf.create(l_time, msg_type, msg_str)
+        Submitter().send_message(self, msg_buf)
+    
+    
+    def __removeDownNodesFromQueue(self, node_id):
+        '''
+        Remove from request queue all down processes.
+        
+        @param node_id: node id to be remove
+        @type noed_id: integer
+        '''
+        tmp_pq = PriorityQueue()
+        ts_pid_list = []
+        # remove all processes from queue
+        for index in range(self.__request_queue.qsize()):
+            ts_pid_list = self.__request_queue.get()
+            if int(node_id) != ts_pid_list[1]:
+                tmp_pq.put(ts_pid_list)
+        
+        for index in range(tmp_pq.qsize()):
+            ts_pid_list = tmp_pq.get()
+            self.__request_queue.put(ts_pid_list)
+        
+    
+    def __removeDownNodesFromNodeInfos(self, node_id):
+        '''
+        Remove  down node from node_info.
+        
+        @param node_id: node id to be remove
+        @type noed_id: integer
+        '''
+        self.__node_infos.pop(str(node_id))
+    
+    def __addWriteRequest(self, ts_pid_list):
+        '''
+        Add to the request queue a request.
+        
+        @param ts_pid_list: a list with two values [ts, process id]
+        @type ts_pid_list: integer list
+        '''        
+        self.__request_queue.put(ts_pid_list)
+        
+    def __del__(self):
+        """
+        Destroy Node object
+        """
+        pass     
