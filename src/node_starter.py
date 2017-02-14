@@ -11,7 +11,7 @@ import multiprocessing as mp
 from logger.logger import NodeLogger
 from node.node import Node
 from util.settings import Settings
-
+from os import path
 
 
 __NODES = {}
@@ -61,8 +61,21 @@ def __startNodes():
         for i in range(0, len(__NODES)):
             process_list.append(mp.Process(target=Node, args=(str(i), )))                                    
             process_list[i].start()
+
+
+def __createFile():
+    FILE = "../conf/ts_id.txt"
+    FILE_ACCESS_MODE = "w"
+    
+    PATH = path.join(path.dirname(path.abspath(__file__)), FILE)
+    file = open(PATH, FILE_ACCESS_MODE)
+    
+    file.write("0")
+    file.close()
+    
   
 if __name__ == '__main__':
+    __createFile()
     __pref = Settings()
     __pref.loadSettings()
     # read node information

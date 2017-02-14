@@ -16,7 +16,7 @@ from util.settings import Settings
 from node.node_message import Message, MsgType
 from queue import PriorityQueue
 from os import path
-import time
+
 
 class Node(object):
     """
@@ -260,20 +260,21 @@ class Node(object):
         str_buf = bytess.decode(encoding='utf_8', errors='strict')        
         number = int(str_buf)
         
+        # read zero? increase counter
         if number == 0:
             self.__zero_counter += 1
-            
-              
+        # if id is even, than -1. In another case +1            
         if ts_pid_list[1] % 2 == 0:
             number -= 1
         else:
             number += 1
-            
+        
+        # write new value   
         if self.__zero_counter != 3:   
             file.seek(0,0)
             str_buf = str(number) + "\n"
             file.write(str_buf.encode(encoding='utf_8', errors='strict'))
-            
+        # attach node id and changed number
         file.seek(0,2)
         str_buf = "ID: " + str(ts_pid_list[1]) + " Value: " + str(number)
         file.write(str_buf.encode(encoding='utf_8', errors='strict'))
@@ -290,7 +291,7 @@ class Node(object):
             # shutdown me
             self.send(self.__id, MsgType.QUIT, self.incLamportTime())
             self.__im_down = True
-
+        
         if self.__zero_counter != 3:
             # send release        
             self.__number_of_ack = 0       
@@ -303,6 +304,12 @@ class Node(object):
         
     
     def handleImDown(self, msg):
+        '''
+        Handle MsgType.IM_DOWN
+        
+        @param msg: received message
+        @type msg: node_message.Message
+        '''
         if self.__im_down == False:
             self.__removeDownNodesFromQueue(msg.getSubmId())
             self.__removeDownNodesFromNodeInfos(msg.getSubmId())

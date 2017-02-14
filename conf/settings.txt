@@ -20,7 +20,7 @@ NODE_FILE ../../conf/node_list.txt
 MAX_NEIGHBORS 2
 
 # total number of nodes
-NODES 8
+NODES 40
 
 # number of edges
 EDGES 0

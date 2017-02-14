@@ -120,13 +120,12 @@ class Receiver(object):
         @param msg: received message
         @type msg: NodeMessage
         '''
-        #self.__node.setImDown(True)
-        #if self.__node.getImDown() == False:
         subm_id = int(msg.getSubmId())
-            
+        # notify another nodes: i'm down!   
         for node_id in self.__node.getNodeInfos():
             if int(node_id) != int(self.__node.getID()) and int(node_id) != subm_id:
                 self.__node.send(node_id, MsgType.IM_DOWN, self.__node.incLamportTime())
+                
         self.__quit = True
         self.__LOGGER.info(self.__node.getIdent() + "i am down ... :-(")
            
